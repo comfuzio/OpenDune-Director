@@ -2,7 +2,7 @@
 
 OpenDune-Director is a lightweight, independent, and **100% open-source** web management menu designed specifically for self-hosted *Dune: Awakening* server clusters. 
 
-Unlike restrictive, closed-off, or "source-available" tools that limit community innovation, OpenSietch is built entirely from scratch from raw infrastructure fundamentals. It is licensed under the **GNU AGPLv3**, ensuring that this tool—and any future modifications or dashboards built upon it—will remain completely free, collaborative, and open to everyone forever. No splitters allowed.
+Unlike restrictive, closed-off, or "source-available" tools that limit community innovation, OpenDune-Director is built entirely from scratch from raw infrastructure fundamentals. It is licensed under the **GNU AGPLv3**, ensuring that this tool—and any future modifications or dashboards built upon it—will remain completely free, collaborative, and open to everyone forever. No splitters allowed.
 
 This is work in progress, please join the community's discord: https://discord.gg/rgR79rfnRZ
 
@@ -37,16 +37,21 @@ To deploy this web menu, your infrastructure must meet the following criteria:
 
 ## 📦 Installation & Setup
 
-*(Stay tuned! Provide step-by-step instructions here for how users will clone your repository, run the lightweight web app node/script, and open it in their browser via `http://<YOUR_VM_IP>:port`)*
-
 ```bash
-git clone [https://github.com/comfuzio/OpenDune-Director.git](https://github.com/comfuzio/OpenDune-Director.git)
+# 1. Clone the repository and hop into the directory
+git clone https://github.com/comfuzio/OpenDune-Director.git
 cd OpenDune-Director
+
+# 2. Install the locked-down dependencies smoothly
+pip install -r requirements.txt
+
+# 3. Launch the manager service background listener
+python backend/main.py
 ```
-# Detail your startup/service commands here
+Note: Access the web panel from your local network by navigating to http://<YOUR_SERVER_IP>:8080 in your web browser.
 
 # ✅ Final Notes
 
-Parts of this guide have been written by AI (gemini), mostly the visual parts and the details of the guide. Most of the work is based on template I am working to import .vhdx .qcow2 and other formats to my proxmox hosts.
+Parts of this guide have been written by AI (gemini).
 
 Happy management. 🏜️
