@@ -65,7 +65,7 @@
             </div>
         </section>
 
-        <!-- CARD 3: GAME MONITOR -->
+        <!-- CARD 3: GAME MONITOR & INTERVAL TRACKER -->
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md flex flex-col justify-between">
             <div>
                 <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">📡 Active Game Session Data</h2>
@@ -74,9 +74,14 @@
                         <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Total Cluster Players</div>
                         <div id="metric-players" class="text-3xl font-bold text-white">-- / --</div>
                     </div>
-                    <div class="bg-gray-900 p-4 rounded border border-gray-800">
-                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Local API Gateway</div>
-                        <div class="text-3xl font-bold text-green-400">Online</div>
+                    <div class="bg-gray-900 p-4 rounded border border-gray-800 flex flex-col justify-center items-center">
+                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Refresh Rate Control</div>
+                        <select id="interval-selector" class="mt-1 bg-gray-800 border border-gray-700 text-xs rounded p-1.5 font-semibold text-orange-300 focus:outline-none">
+                            <option value="1000">🚀 Aggressive (1s)</option>
+                            <option value="5000" selected>🍃 Balanced (5s)</option>
+                            <option value="10000">⏳ Conservative (10s)</option>
+                            <option value="30000">💤 Hibernate (30s)</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -88,24 +93,24 @@
         <!-- CARD 4: INFRASTRUCTURE CLUSTER MANAGEMENT CONTROLS -->
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md flex flex-col justify-between">
             <div>
-                <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-2 text-orange-300">🛠️ System Control Panel</h2>
+                <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-2 text-orange-300">🛠️ Global System Controls</h2>
                 <div class="bg-red-950/40 border border-red-800 text-red-300 p-3 rounded text-xs mb-4 leading-relaxed">
                     <strong>⚠️ LIABILITY & RISK NOTICE:</strong> This manager tool is in active development. Use with extreme caution. The authors are not held responsible for data loss, server configuration corruption, or unexpected cluster crashes. This interface triggers the official background server files and deployment scripts provided natively by <strong>Funcom</strong>.
                 </div>
             </div>
             <div class="space-y-3">
                 <div class="grid grid-cols-3 gap-2">
-                    <button id="btn-start" class="bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
-                        ▶ Start Pods
+                    <button id="global-btn-start" class="bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
+                        ▶ Global Start
                     </button>
-                    <button id="btn-stop" class="bg-red-900/40 hover:bg-red-800/60 text-red-300 border border-red-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
-                        ■ Stop Pods
+                    <button id="global-btn-stop" class="bg-red-900/40 hover:bg-red-800/60 text-red-300 border border-red-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
+                        ■ Global Stop
                     </button>
-                    <button id="btn-restart" class="bg-gray-900 hover:bg-gray-700 text-gray-200 border border-gray-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
-                        🔄 Cycle/Restart
+                    <button id="global-btn-restart" class="bg-gray-900 hover:bg-gray-700 text-gray-200 border border-gray-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
+                        🔄 Global Restart
                     </button>
                 </div>
-                <button id="btn-update" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 px-4 rounded text-xs uppercase tracking-widest transition-colors shadow-md">
+                <button id="global-btn-update" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 px-4 rounded text-xs uppercase tracking-widest transition-colors shadow-md">
                     🚀 Run Safe Server File Update
                 </button>
             </div>
@@ -119,6 +124,7 @@
 
     <script>
         const API_BASE = "";
+        let syncIntervalTracker = null;
 
         async function loadConfig() {
             try {
@@ -159,7 +165,7 @@
             }
         });
 
-        // UNIFIED LOOP: UPDATES CLUSTER NODES AND PLAYER POPULATION DYNAMICALLY
+        // UNIFIED ENGINE LOOP: PARSES PER-INSTANCE DATA AND BUILDS MICRO-BUTTON INTERACTIVE WRAPPERS
         async function runUnifiedDashboardSync() {
             try {
                 const response = await fetch(`${API_BASE}/api/status`);
@@ -184,7 +190,7 @@
                     const mapKeys = Object.keys(zones);
                     
                     if (mapKeys.length === 0) {
-                        container.innerHTML = `<div class="text-sm text-gray-400 italic text-center py-4">No active game server pods detected in this namespace.</div>`;
+                        container.innerHTML = `<div class="text-sm text-gray-400 italic text-center py-4">No active game server segments detected in this namespace.</div>`;
                         return;
                     }
 
@@ -196,12 +202,22 @@
                             : "bg-yellow-900/50 text-yellow-400 border-yellow-700";
 
                         const rowHtml = `
-                            <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-800">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-900 p-3 rounded border border-gray-800 space-y-2 sm:space-y-0">
                                 <div>
-                                    <div class="font-medium">${zoneData.display_name}</div>
-                                    <div class="text-xs text-gray-500 font-mono">${mapKey}</div>
+                                    <div class="font-medium text-sm flex items-center space-x-2">
+                                        <span>${zoneData.display_name}</span>
+                                        <span class="bg-gray-800 border border-gray-700 text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono">👥 ${zoneData.players} In</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 font-mono mt-0.5">${mapKey}</div>
                                 </div>
-                                <span class="${badgeClass} border text-xs px-2.5 py-0.5 rounded-full font-semibold">${zoneData.status}</span>
+                                
+                                <!-- TARGETED INSTANCE CONTROLS LAYER -->
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="${badgeClass} border text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mr-1">${zoneData.status}</span>
+                                    <button onclick="sendTargetedCommand('start', '${mapKey}')" title="Wake Up Instance" class="bg-emerald-950/40 text-emerald-400 border border-emerald-800 hover:bg-emerald-900/40 p-1 px-2 text-xs font-bold rounded transition-colors">▶</button>
+                                    <button onclick="sendTargetedCommand('stop', '${mapKey}')" title="Hibernate Instance" class="bg-red-950/40 text-red-400 border border-red-800 hover:bg-red-900/40 p-1 px-2 text-xs font-bold rounded transition-colors">■</button>
+                                    <button onclick="sendTargetedCommand('restart', '${mapKey}')" title="Cycle Instance" class="bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 p-1 px-1.5 text-xs font-bold rounded transition-colors">🔄</button>
+                                </div>
                             </div>
                         `;
                         container.insertAdjacentHTML('beforeend', rowHtml);
@@ -212,37 +228,56 @@
             }
         }
 
-        async function sendClusterCommand(action, zoneType) {
+        // DISPATCHER FOR TARGETED ROWS
+        async function sendTargetedCommand(action, mapTarget) {
             try {
-                const response = await fetch(`${API_BASE}/api/zone/${zoneType}/${action}`, { method: 'POST' });
+                const response = await fetch(`${API_BASE}/api/zone/${action}/${mapTarget}`, { method: 'POST' });
                 const result = await response.json();
                 if (response.ok && result.success) {
-                    alert(`✅ Command [${action.toUpperCase()}] dispatched to the battlegroup layer successfully.`);
+                    alert(`✅ Target row command [${action.toUpperCase()}] executed on sector: ${mapTarget}`);
+                    runUnifiedDashboardSync();
                 } else {
-                    alert(`❌ Command Error: ${result.detail || "Action rejected by cluster supervisor."}`);
+                    alert(`❌ Row Error: ${result.detail || "Action rejected."}`);
                 }
             } catch (error) {
                 alert(`❌ Connection Failure: ${error.message}`);
             }
         }
 
-        async function triggerSafeUpdateSequence(zoneType) {
+        // DISPATCHER FOR GLOBAL MAIN COMMAND PANEL
+        async function sendGlobalCommand(action) {
+            try {
+                const response = await fetch(`${API_BASE}/api/zone/${action}`, { method: 'POST' });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert(`✅ Global directive [${action.toUpperCase()}] successfully applied across all cluster deployments.`);
+                    runUnifiedDashboardSync();
+                } else {
+                    alert(`❌ Global Error: ${result.detail || "Action rejected."}`);
+                }
+            } catch (error) {
+                alert(`❌ Connection Failure: ${error.message}`);
+            }
+        }
+
+        async function triggerGlobalSafeUpdateSequence() {
             const currentBackupVerified = confirm("❓ SAFETY CHECK:\nHave you taken a manual snapshot or backup of your server data before initiating this file update?");
             if (!currentBackupVerified) {
                 alert("🛑 UPDATE ABORTED:\nPlease run the update routine again after your backup has been completed successfully.");
                 return;
             }
-            if (!confirm("⚠️ Proceeding with Server Update:\nThis will safely STOP your active map pods, execute the official Funcom game files update routine, and RESTART your cluster. Players will be disconnected. Proceed?")) return;
+            if (!confirm("⚠️ Proceeding with Global Server Update:\nThis will execute a global stop, update the core Funcom files via root execution parameters, and restart the ecosystem deployments. Players will be disconnected. Proceed?")) return;
 
-            const updateBtn = document.getElementById('btn-update');
+            const updateBtn = document.getElementById('global-btn-update');
             updateBtn.innerText = "⏳ PROCESSING UPDATE (DO NOT CLOSE)...";
             updateBtn.disabled = true;
 
             try {
-                const response = await fetch(`${API_BASE}/api/zone/${zoneType}/safe-update`, { method: 'POST' });
+                const response = await fetch(`${API_BASE}/api/safe-update`, { method: 'POST' });
                 const result = await response.json();
                 if (response.ok && result.success) {
                     alert("🎉 SUCCESS:\n" + result.message);
+                    runUnifiedDashboardSync();
                 } else {
                     alert(`❌ UPDATE ERROR:\n${result.detail || "The update sequence failed during execution."}`);
                 }
@@ -254,17 +289,37 @@
             }
         }
 
-        document.getElementById('btn-start').addEventListener('click', () => sendClusterCommand('start', 'hb1'));
-        document.getElementById('btn-stop').addEventListener('click', () => sendClusterCommand('stop', 'hb1'));
-        document.getElementById('btn-restart').addEventListener('click', () => {
-            if(confirm("Perform a cluster rolling restart on active game segments?")) sendClusterCommand('restart', 'hb1');
+        // SETUP REFRESH ENGINE CONTROLLER
+        function initializeRefreshInterval() {
+            const selector = document.getElementById('interval-selector');
+            
+            const startTicker = (ms) => {
+                if (syncIntervalTracker) clearInterval(syncIntervalTracker);
+                syncIntervalTracker = setInterval(runUnifiedDashboardSync, ms);
+            };
+
+            selector.addEventListener('change', (e) => {
+                const selectedMs = parseInt(e.target.value);
+                startTicker(selectedMs);
+            });
+
+            startTicker(5000); // Default loop velocity setup
+        }
+
+        // CONNECT GLOBAL COMPONENT BINDINGS
+        document.getElementById('global-btn-start').addEventListener('click', () => sendGlobalCommand('start'));
+        document.getElementById('global-btn-stop').addEventListener('click', () => {
+            if(confirm("⚠️ Critical Warning:\nThis executes a global kill instruction on every active map segment across the cluster. Proceed?")) sendGlobalCommand('stop');
         });
-        document.getElementById('btn-update').addEventListener('click', () => triggerSafeUpdateSequence('hb1'));
+        document.getElementById('global-btn-restart').addEventListener('click', () => {
+            if(confirm("Perform a rolling ecosystem layout cluster cycle?")) sendGlobalCommand('restart');
+        });
+        document.getElementById('global-btn-update').addEventListener('click', () => triggerGlobalSafeUpdateSequence());
 
         window.addEventListener('DOMContentLoaded', () => {
             loadConfig();
             runUnifiedDashboardSync();
-            setInterval(runUnifiedDashboardSync, 5000);
+            initializeRefreshInterval();
         });
     </script>
 </body>
