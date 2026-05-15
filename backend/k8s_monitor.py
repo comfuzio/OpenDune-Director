@@ -1,7 +1,73 @@
 import subprocess
 import re
+import psutil
+import time
 
 BATTLEGROUP_BIN = "/home/dune/.dune/bin/battlegroup"
+
+# Cache dictionary to compute real-time disk and network delta velocities
+_metrics_cache = {
+    "last_time": time.time(),
+    "disk_read": psutil.disk_io_counters().read_bytes if psutil.disk_io_counters() else 0,
+    "disk_write": psutil.disk_io_counters().write_bytes if psutil.disk_io_counters() else 0,
+    "net_sent": psutil.net_io_counters().bytes_sent,
+    "net_recv": psutil.net_io_counters().bytes_recv
+}
+
+def get_system_telemetry():
+    """Calculates granular host OS infrastructure resource data and transmission velocities."""
+    global _metrics_cache
+    current_time = time.time()
+    time_delta = max(current_time - _metrics_cache["last_time"], 0.1)
+    
+    # 1. Core Metrics
+    cpu_pct = psutil.cpu_percent(interval=None)
+    ram = psutil.virtual_memory()
+    
+    # 2. Disk Velocity Deltas
+    disk_io = psutil.disk_io_counters()
+    read_speed = 0.0
+    write_speed = 0.0
+    if disk_io:
+        read_speed = (disk_io.read_bytes - _metrics_cache["disk_read"]) / time_delta / (1024 * 1024)
+        write_speed = (disk_io.write_bytes - _metrics_cache["disk_write"]) / time_delta / (1024 * 1024)
+        _metrics_cache["disk_read"] = disk_io.read_bytes
+        _metrics_cache["disk_write"] = disk_io.write_bytes
+
+    # 3. Network Throughput Deltas
+    net_io = psutil.net_io_counters()
+    sent_speed = (net_io.bytes_sent - _metrics_cache["net_sent"]) / time_delta / 1024
+    recv_speed = (net_io.bytes_recv - _metrics_cache["net_recv"]) / time_delta / 1024
+    _metrics_cache["net_sent"] = net_io.bytes_sent
+    _metrics_cache["net_recv"] = net_io.bytes_recv
+    
+    _metrics_cache["last_time"] = current_time
+
+    return {
+        "cpu": f"{cpu_pct}%",
+        "ram": f"{ram.percent}% ({round(ram.used/(1024**3), 1)}GB / {round(ram.total/(1024**3), 1)}GB)",
+        "disk": f"R: {round(read_speed, 1)} MB/s | W: {round(write_speed, 1)} MB/s",
+        "network": f"▲ {round(sent_speed, 1)} KB/s | ▼ {round(recv_speed, 1)} KB/s"
+    }
+
+def get_connected_player_ips():
+    """Scrapes the host network layer socket pool for external traffic hitting game ports."""
+    connected_ips = []
+    try:
+        # Standard default game server distribution port ranges
+        game_ports = [7777, 7778, 27015]
+        
+        # Pull active connections via psutil socket networks
+        for conn in psutil.net_connections(kind='udp'):
+            if conn.laddr.port in game_ports and conn.raddr:
+                ip = conn.raddr.ip
+                # Filter out standard local loopback and container orchestration noise
+                if ip not in ["127.0.0.1", "0.0.0.0", "::"] and not ip.startswith("10."):
+                    if ip not in connected_ips:
+                        connected_ips.append(ip)
+    except:
+        pass
+    return connected_ips
 
 def get_cluster_and_metrics():
     try:
@@ -17,7 +83,9 @@ def get_cluster_and_metrics():
             "zones": {},
             "total_players": "0",
             "max_capacity": "40",
-            "cluster_healthy": "Offline"
+            "cluster_healthy": "Offline",
+            "telemetry": {"cpu": "0%", "ram": "0%", "disk": "0 MB/s", "network": "0 KB/s"},
+            "player_ips": []
         }
 
     detected_zones = {}
@@ -31,15 +99,13 @@ def get_cluster_and_metrics():
         if not line:
             continue
 
-        # 1. Capture the Global State (Check first dashed divider boundary safely)
         if "----------" in line and not parsing_servers and cluster_healthy == "Unknown State":
             data_row = lines[idx + 1].strip()
             row_parts = re.split(r'\s+', data_row)
             if row_parts:
-                global_status = row_parts[0]  # Healthy, Stopped, or Stopping
+                global_status = row_parts[0]
                 cluster_healthy = f"Cluster {global_status}" if global_status in ["Stopped", "Stopping"] else "Cluster Running" if global_status == "Healthy" else f"Cluster: {global_status}"
 
-        # 2. Trigger individual game server mapping blocks
         if "Map" in line and "Phase" in line and "Players" in line:
             parsing_servers = True
             continue
@@ -66,7 +132,6 @@ def get_cluster_and_metrics():
                     "players": players_count  
                 }
 
-    # 3. Dynamic Live Cluster Cap Check Space
     try:
         cap_query = subprocess.run(
             ["sudo", "kubectl", "get", "battlegroups", "-o", "jsonpath={.items[*].spec.gameServers.maxPlayers}"],
@@ -83,7 +148,9 @@ def get_cluster_and_metrics():
         "cluster_healthy": cluster_healthy,
         "zones": detected_zones,
         "total_players": str(total_players),
-        "max_capacity": str(max_capacity)
+        "max_capacity": str(max_capacity),
+        "telemetry": get_system_telemetry(),      # Pipe system specs onto JSON return
+        "player_ips": get_connected_player_ips()   # Pipe compiled connected client IPs
     }
 
 def execute_battlegroup_action(action, map_name=None):
@@ -93,7 +160,6 @@ def execute_battlegroup_action(action, map_name=None):
                 ["sudo", BATTLEGROUP_BIN, "update"],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
             )
-        
         cmd = [BATTLEGROUP_BIN, action, map_name] if map_name else [BATTLEGROUP_BIN, action]
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         return {"success": True, "message": result.stdout}
