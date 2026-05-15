@@ -2,15 +2,8 @@
 # OpenDune-Director - Core System Dependencies
 # ====================================================================
 
-# The core Web Framework handling our API endpoints and serving HTML
-fastapi==0.111.0
-
-# The production-ready ASGI web server to host and run the FastAPI app
-uvicorn==0.30.1
-
-# Required by FastAPI to securely parse and validate form data/configurations
-pydantic==2.7.1
-
-# Required by FastAPI for serving the static HTML/CSS frontend dashboard files
-anyio==4.4.0
-starlette==0.37.2
+fastapi
+uvicorn
+pydantic>=2.10.0
+anyio
+starlette
