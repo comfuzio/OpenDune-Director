@@ -1,67 +1,59 @@
 import os
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-
-# Import the custom modules we built earlier
-import k8s_monitor
 import config_editor
+import k8s_monitor
 
-app = FastAPI(title="OpenDune-Director API")
+app = FastAPI(title="OpenDune-Director Web Engine")
 
-# Define a Pydantic data model to safely validate incoming config updates
+# DATA SCHEMES FOR PAYLOAD VALIDATION
 class ConfigUpdate(BaseModel):
     force_pvp: bool
     security_zones: bool
     coriolis_storm: bool
 
-# -------------------------------------------------------------------------
-# 1. API ENDPOINTS (The plumbing between frontend and backend)
-# -------------------------------------------------------------------------
+# 1. SERVE FRONTEND INTERFACE DASHBOARD
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
-@app.get("/api/status")
-async def get_cluster_status():
-    """Returns real-time Kubernetes pod statuses to the dashboard."""
-    result = k8s_monitor.get_zone_status()
-    if not result["success"]:
-        raise HTTPException(status_code=500, detail=result["error"])
-    return result
+@app.get("/", response_class=HTMLResponse)
+async def get_dashboard():
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    if not os.path.exists(index_path):
+        raise HTTPException(status_code=404, detail="Dashboard index.html file not found.")
+    with open(index_path, "r") as f:
+        return f.read()
 
-
-@app.post("/api/restart/{zone_type}")
-async def restart_cluster_zone(zone_type: str):
-    """Triggers a rolling deployment restart for the requested zone."""
-    result = k8s_monitor.restart_zone(zone_type)
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result["error"])
-    return result
-
-
+# 2. CONFIGURATION HANDLERS (.INI READ / WRITE)
 @app.get("/api/config")
-async def get_server_config():
-    """Reads the local UserGame.ini file and passes values to the frontend UI."""
+async def get_config_endpoint():
     result = config_editor.read_server_config()
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
-
 @app.post("/api/config")
-async def update_server_config(payload: ConfigUpdate):
-    """Overwrites server settings inside UserGame.ini with new UI inputs."""
+async def save_config_endpoint(payload: ConfigUpdate):
     result = config_editor.write_server_config(
-        world_name=payload.world_name,
-        password=payload.password,
-        max_players=payload.max_players
+        force_pvp=payload.force_pvp,
+        security_zones=payload.security_zones,
+        coriolis_storm=payload.coriolis_storm
     )
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
+# 3. CONSOLIDATED DYNAMIC TELEMETRY ROUTER (CLUSTERS & PLAYERS)
+@app.get("/api/status")
+async def get_cluster_status_endpoint():
+    # Queries the master CLI script to return verified operational facts
+    return k8s_monitor.get_cluster_and_metrics()
+
+# 4. ENVIRONMENT COMMAND CONTROL ENDPOINTS
 @app.post("/api/zone/{zone_type}/start")
 async def start_zone(zone_type: str):
-    """Scales deployment up to 1 replica."""
     result = k8s_monitor.set_zone_scale(zone_type, 1)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
@@ -69,43 +61,31 @@ async def start_zone(zone_type: str):
 
 @app.post("/api/zone/{zone_type}/stop")
 async def stop_zone(zone_type: str):
-    """Scales deployment down to 0 replicas (Stops the instance)."""
     result = k8s_monitor.set_zone_scale(zone_type, 0)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
-@app.post("/api/zone/{zone_type}/safe-update")
-async def safe_update_zone(zone_type: str):
-    """Triggers the strict Stop -> Update -> Start sequence."""
-    result = k8s_monitor.run_sequential_update(zone_type)
+@app.post("/api/zone/{zone_type}/restart")
+async def restart_zone(zone_type: str):
+    # Sequential cluster toggle to simulate an explicit instance cycle safely
+    k8s_monitor.set_zone_scale(zone_type, 0)
+    result = k8s_monitor.set_zone_scale(zone_type, 1)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
-    return result
+    return {"success": True, "message": "Zone cycle complete."}
 
-# -------------------------------------------------------------------------
-# 2. FRONTEND ROUTING (Serving the dashboard page)
-# -------------------------------------------------------------------------
+@app.post("/api/zone/{zone_type}/safe-update")
+async def safe_update_zone(zone_type: str):
+    try:
+        k8s_monitor.set_zone_scale(zone_type, 0)
+        # Directly triggers Funcom's official script update action parameter
+        subprocess.run(["sudo", "/home/dune/.dune/download/scripts/setup/battlegroup", "update"], check=True)
+        k8s_monitor.set_zone_scale(zone_type, 1)
+        return {"success": True, "message": "Cluster safely stepped through file update sequence."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Define absolute paths to your frontend assets
-FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
-
-@app.get("/")
-async def serve_dashboard():
-    """Serves your index.html dashboard file when hitting http://server-ip:8080/"""
-    index_path = os.path.join(FRONTEND_DIR, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"error": "Dashboard index.html file missing from frontend folder."}
-
-# If you ever create an external style.css or javascript assets later, 
-# this line mounts the whole folder so they load automatically.
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
-
-# -------------------------------------------------------------------------
-# 3. RUNNER EXECUTION
-# -------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    # Listens globally on port 8080 so your Windows PC can reach it
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
