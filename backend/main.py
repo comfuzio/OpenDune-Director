@@ -1,7 +1,8 @@
 import os
+import asyncio
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 import config_editor
 import k8s_monitor
@@ -46,38 +47,55 @@ async def save_config_endpoint(payload: ConfigUpdate):
 async def get_cluster_status_endpoint():
     return k8s_monitor.get_cluster_and_metrics()
 
-# 🛠️ FLEXIBLE ROUTER FOR TARGETED OR GLOBAL CONTROL COMMANDS
 @app.post("/api/zone/{action}")
 async def global_cluster_action(action: str, map_target: str = None):
-    """Handles global commands directly (e.g., stopping/starting the entire environment)."""
     result = k8s_monitor.execute_battlegroup_action(action, map_target)
-    if not result["success"]:
+    if isinstance(result, dict) and not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
 @app.post("/api/zone/{action}/{map_target}")
 async def targeted_instance_action(action: str, map_target: str):
-    """Handles instance-specific actions triggered right from the row buttons."""
     result = k8s_monitor.execute_battlegroup_action(action, map_target)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
-@app.post("/api/safe-update")
-async def safe_update_cluster_endpoint():
-    """Triggers the safe programmatic stop -> update -> start macro loop globally."""
-    try:
-        # 1. Bring down the cluster
+# 📡 REAL-TIME LINE-BY-LINE STREAMING CONTROLLER
+@app.get("/api/stream-update")
+async def stream_update_cluster_endpoint():
+    """
+    Executes an update sequence and streams the console output directly
+    to the browser window line-by-line.
+    """
+    async def log_generator():
+        yield "🔄 Initiating safe global cluster shutdown...\n"
         k8s_monitor.execute_battlegroup_action("stop")
-        # 2. Update server source files via root execution parameters
-        result = k8s_monitor.execute_battlegroup_action("update")
-        if not result["success"]:
-            raise HTTPException(status_code=500, detail=result["error"])
-        # 3. Bring the entire ecosystem back online
+        await asyncio.sleep(2)
+        
+        yield "🚀 Triggering Funcom server file verification and update procedure...\n"
+        process = k8s_monitor.execute_battlegroup_action("update")
+        
+        if not hasattr(process, "stdout"):
+            yield f"❌ Initialization Error: Failed to spawn update terminal process.\n"
+            return
+
+        # Read output lines dynamically from the background terminal loop
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                break
+            yield f"📋 {line}"
+            # Let the CPU breathe between log rows
+            await asyncio.sleep(0.05)
+            
+        process.wait()
+        
+        yield "🔄 Re-initializing your cluster zones back online...\n"
         k8s_monitor.execute_battlegroup_action("start")
-        return {"success": True, "message": "Global cluster files updated and deployments re-initialized successfully."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        yield "🎉 UPDATE COMPLETE: All deployments successfully patched and online!\n"
+
+    return StreamingResponse(log_generator(), media_type="text/plain")
 
 if __name__ == "__main__":
     import uvicorn
