@@ -122,6 +122,109 @@
     <footer class="text-center py-8 text-xs text-gray-500">
         OpenDune-Director • Fully Open Source Under GNU AGPLv3 License Protection
     </footer>
+<!-- FRONTEND PLUMBING: CONNECTING TO FASTAPI BACKEND -->
+    <script>
+        const API_BASE = ""; // Relative paths since frontend is hosted on the same port
 
+        // 1. FETCH AND DISPLAY CURRENT .INI CONFIGURATION
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/api/config`);
+                if (!response.ok) throw new Error("Failed to read server configuration");
+                
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('world-name').value = result.data.world_name;
+                    document.getElementById('server-password').value = result.data.password;
+                    document.getElementById('max-players').value = result.data.max_players;
+                }
+            } catch (error) {
+                console.error("Config Load Error:", error);
+            }
+        }
+
+        // 2. SAVE CONFIGURATION BACK TO .INI FILE
+        document.getElementById('config-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const payload = {
+                world_name: document.getElementById('world-name').value,
+                password: document.getElementById('server-password').value,
+                max_players: parseInt(document.getElementById('max-players').value)
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert("🏜️ Server configuration successfully written to UserGame.ini!");
+                } else {
+                    alert(`❌ Save Failed: ${result.detail || "Unknown error"}`);
+                }
+            } catch (error) {
+                alert(`❌ Network error while saving config: ${error.message}`);
+            }
+        });
+
+        // 3. FETCH AND DISPLAY REAL-TIME KUBERNETES POD STATUSES
+        async function updateClusterStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const statusIndicator = document.getElementById('cluster-status');
+                
+                if (!response.ok) {
+                    statusIndicator.innerText = "Cluster Error (API Offline)";
+                    statusIndicator.className = "text-sm font-medium text-red-400";
+                    return;
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    statusIndicator.innerText = "Cluster Online (K3s)";
+                    statusIndicator.className = "text-sm font-medium text-gray-300";
+                    
+                    // You can add logic here to dynamically repaint rows if needed,
+                    // but keeping the indicator solid for stability.
+                }
+            } catch (error) {
+                console.error("Cluster Status Sync Error:", error);
+            }
+        }
+
+        // 4. INFRASTRUCTURE BUTTON CONTROLS (RESTART PLUGINS)
+        async function triggerZoneRestart(zoneType) {
+            if (!confirm(`Are you sure you want to perform a rolling restart on the ${zoneType} deployment?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/restart/${zoneType}`, { method: 'POST' });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert(`🔄 Restart sequence initiated for ${zoneType}. Pods will cycle smoothly.`);
+                } else {
+                    alert(`❌ Action Failed: ${result.detail || "Check server logs"}`);
+                }
+            } catch (error) {
+                alert(`❌ Network Failure: ${error.message}`);
+            }
+        }
+
+        // Bind the button actions to the infrastructure script
+        document.getElementById('btn-restart').addEventListener('click', () => triggerZoneRestart('hb1'));
+
+        // INITIALIZATION EVENTS ON RUNTIME
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfig(); // Get data immediately on load
+            updateClusterStatus();
+            
+            // Poll the Kubernetes cluster loop every 5 seconds to track pod stability
+            setInterval(updateClusterStatus, 5000);
+        });
+    </script>
+    
 </body>
 </html>
