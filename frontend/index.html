@@ -94,12 +94,21 @@
             </div>
         </section>
 
-        <!-- CARD 4: INFRASTRUCTURE CLUSTER MANAGEMENT CONTROLS -->
+        <!-- CARD 4: INFRASTRUCTURE CLUSTER MANAGEMENT CONTROLS + STREAMING TERMINAL -->
         <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl flex flex-col justify-between">
             <div>
                 <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-2 text-orange-300 tracking-wide uppercase">🛠️ Core Control Panel</h2>
-                <div class="bg-red-950/40 border border-red-900/60 text-red-300 p-4 rounded-lg text-xs leading-relaxed mb-6">
+                <div id="disclaimer-panel" class="bg-red-950/40 border border-red-900/60 text-red-300 p-4 rounded-lg text-xs leading-relaxed mb-4">
                     <strong>⚠️ LIABILITY & RISK NOTICE:</strong> This manager tool is in active development. Use with extreme caution. The authors are not held responsible for data loss, server configuration corruption, or unexpected cluster crashes. This interface triggers the official background server files and deployment scripts provided natively by <strong>Funcom</strong>.
+                </div>
+                
+                <!-- 📟 DYNAMIC STREAMING CONSOLE WORKSPACE (HIDDEN UNTIL UPDATE INITIATED) -->
+                <div id="console-wrapper" class="hidden mb-4">
+                    <div class="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1.5 flex justify-between items-center">
+                        <span>📟 Live Battlegroup Standard Output Stream:</span>
+                        <span class="animate-pulse text-red-400 font-black">● LIVE EXECUTION</span>
+                    </div>
+                    <pre id="terminal-console" class="bg-black text-green-400 p-4 rounded-lg border border-gray-800 font-mono text-[11px] leading-relaxed overflow-y-auto h-44 shadow-inner whitespace-pre-wrap">Initializing log listener stream...</pre>
                 </div>
             </div>
             <div class="space-y-3.5">
@@ -191,7 +200,6 @@
                 if (result.success) {
                     statusIndicator.innerText = result.cluster_healthy;
                     
-                    // DYNAMIC VISUAL HANDSHAKE MATRICES
                     if (result.cluster_healthy === "Cluster Running") {
                         statusIndicator.className = "text-xs md:text-sm font-bold tracking-wide text-green-400";
                         pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
@@ -201,7 +209,6 @@
                         pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75";
                         solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-yellow-500";
                     } else {
-                        // Cluster Stopped, Suspended, or Offline
                         statusIndicator.className = "text-xs md:text-sm font-bold tracking-wide text-red-400";
                         pulseDot.className = "absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-0";
                         solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
@@ -241,9 +248,9 @@
                                 
                                 <div class="flex items-center space-x-2 justify-end">
                                     <span class="${badgeClass} border text-[10px] px-2.5 py-1 rounded font-black uppercase tracking-widest mr-2">${zoneData.status}</span>
-                                    <button onclick="sendTargetedCommand('start', '${mapKey}')" title="Wake Up Sector" class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">▶</button>
-                                    <button onclick="sendTargetedCommand('stop', '${mapKey}')" title="Hibernate Sector" class="bg-red-950 text-red-400 border border-red-800/60 hover:bg-red-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">■</button>
-                                    <button onclick="sendTargetedCommand('restart', '${mapKey}')" title="Cycle Sector" class="bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white p-2 px-2.5 text-xs font-black rounded-md transition-all active:scale-[0.92]">🔄</button>
+                                    <button onclick="sendTargetedCommand('start', '${mapKey}')" class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">▶</button>
+                                    <button onclick="sendTargetedCommand('stop', '${mapKey}')" class="bg-red-950 text-red-400 border border-red-800/60 hover:bg-red-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">■</button>
+                                    <button onclick="sendTargetedCommand('restart', '${mapKey}')" class="bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white p-2 px-2.5 text-xs font-black rounded-md transition-all active:scale-[0.92]">🔄</button>
                                 </div>
                             </div>
                         `;
@@ -273,58 +280,66 @@
         async function sendTargetedCommand(action, mapTarget) {
             try {
                 const response = await fetch(`${API_BASE}/api/zone/${action}/${mapTarget}`, { method: 'POST' });
-                const result = await response.json();
-                if (response.ok && result.success) {
-                    runUnifiedDashboardSync();
-                } else {
-                    alert(`❌ Row Error: ${result.detail || "Action rejected."}`);
-                }
+                if (response.ok) runUnifiedDashboardSync();
             } catch (error) {
-                alert(`❌ Connection Failure: ${error.message}`);
+                console.error(error);
             }
         }
 
         async function sendGlobalCommand(action) {
             try {
                 const response = await fetch(`${API_BASE}/api/zone/${action}`, { method: 'POST' });
-                const result = await response.json();
-                if (response.ok && result.success) {
-                    alert(`✅ Global directive [${action.toUpperCase()}] successfully applied across all cluster deployments.`);
+                if (response.ok) {
+                    alert(`✅ Global directive [${action.toUpperCase()}] applied successfully.`);
                     runUnifiedDashboardSync();
-                } else {
-                    alert(`❌ Global Error: ${result.detail || "Action rejected."}`);
                 }
             } catch (error) {
                 alert(`❌ Connection Failure: ${error.message}`);
             }
         }
 
+        // ASYNCHRONOUS LOG INTERCEPTOR ENGINE FOR LIVE UPDATE REPORTING
         async function triggerGlobalSafeUpdateSequence() {
             const currentBackupVerified = confirm("❓ SAFETY CHECK:\nHave you taken a manual snapshot or backup of your server data before initiating this file update?");
-            if (!currentBackupVerified) {
-                alert("🛑 UPDATE ABORTED:\nPlease run the update routine again after your backup has been completed successfully.");
-                return;
-            }
-            if (!confirm("⚠️ Proceeding with Global Server Update:\nThis will execute a global stop, update the core Funcom files via root execution parameters, and restart the ecosystem deployments. Players will be disconnected. Proceed?")) return;
+            if (!currentBackupVerified) return;
+            
+            if (!confirm("⚠️ Proceeding with Global Server Update:\nThis will safely drop deployments, stream native logs live, and re-initialize the maps. Proceed?")) return;
 
             const updateBtn = document.getElementById('global-btn-update');
-            updateBtn.innerText = "⏳ PROCESSING UPDATE (DO NOT CLOSE)...";
+            const disclaimerPanel = document.getElementById('disclaimer-panel');
+            const consoleWrapper = document.getElementById('console-wrapper');
+            const terminalConsole = document.getElementById('terminal-console');
+
+            // Swap disclaimer layout for the active visual terminal environment
+            disclaimerPanel.classList.add('hidden');
+            consoleWrapper.classList.remove('hidden');
+            terminalConsole.innerText = "Connecting to background service log wheels...\n";
+
             updateBtn.disabled = true;
+            updateBtn.className = "w-full bg-gray-700 text-gray-400 font-black py-3 px-4 rounded-lg text-xs md:text-sm uppercase tracking-widest cursor-not-allowed";
 
             try {
-                const response = await fetch(`${API_BASE}/api/safe-update`, { method: 'POST' });
-                const result = await response.json();
-                if (response.ok && result.success) {
-                    alert("🎉 SUCCESS:\n" + result.message);
-                    runUnifiedDashboardSync();
-                } else {
-                    alert(`❌ UPDATE ERROR:\n${result.detail || "The update sequence failed during execution."}`);
+                const response = await fetch(`${API_BASE}/api/stream-update`);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    const chunkText = decoder.decode(value, { stream: true });
+                    terminalConsole.innerText += chunkText;
+                    
+                    // Force box layer to stick completely to bottom logs scroll bounds automatically
+                    terminalConsole.scrollTop = terminalConsole.scrollHeight;
                 }
+                
+                runUnifiedDashboardSync();
             } catch (error) {
-                alert(`❌ Fatal Network Timeout: ${error.message}`);
+                terminalConsole.innerText += `\n❌ STREAM INTERRUPTED: ${error.message}\n`;
             } finally {
-                updateBtn.innerText = "🚀 Run Safe Server File Update";
                 updateBtn.disabled = false;
+                updateBtn.className = "w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 px-4 rounded-lg text-xs md:text-sm uppercase tracking-widest transition-all shadow-md active:scale-[0.99]";
             }
         }
 
@@ -342,10 +357,10 @@
 
         document.getElementById('global-btn-start').addEventListener('click', () => sendGlobalCommand('start'));
         document.getElementById('global-btn-stop').addEventListener('click', () => {
-            if(confirm("⚠️ Critical Warning:\nThis executes a global kill instruction on every active map segment across the cluster. Proceed?")) sendGlobalCommand('stop');
+            if(confirm("⚠️ Critical Warning:\nThis executes a global kill instruction across the cluster. Proceed?")) sendGlobalCommand('stop');
         });
         document.getElementById('global-btn-restart').addEventListener('click', () => {
-            if(confirm("Perform a rolling ecosystem layout cluster cycle?")) sendGlobalCommand('restart');
+            if(confirm("Perform a rolling cluster deployment cycle?")) sendGlobalCommand('restart');
         });
         document.getElementById('global-btn-update').addEventListener('click', () => triggerGlobalSafeUpdateSequence());
 
