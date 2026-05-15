@@ -4,6 +4,8 @@ OpenDune-Director is a lightweight, independent, and **100% open-source** web ma
 
 Unlike restrictive, closed-off, or "source-available" tools that limit community innovation, OpenSietch is built entirely from scratch from raw infrastructure fundamentals. It is licensed under the **GNU AGPLv3**, ensuring that this tool—and any future modifications or dashboards built upon it—will remain completely free, collaborative, and open to everyone forever. No splitters allowed.
 
+This is work in progress, please join the community's discord: https://discord.gg/rgR79rfnRZ
+
 ---
 
 ## 🚀 Key Features
@@ -38,6 +40,13 @@ To deploy this web menu, your infrastructure must meet the following criteria:
 *(Stay tuned! Provide step-by-step instructions here for how users will clone your repository, run the lightweight web app node/script, and open it in their browser via `http://<YOUR_VM_IP>:port`)*
 
 ```bash
-git clone [https://github.com/YOUR_USERNAME/opensietch-webui.git](https://github.com/YOUR_USERNAME/opensietch-webui.git)
-cd opensietch-webui
+git clone [https://github.com/comfuzio/OpenDune-Director.git](https://github.com/comfuzio/OpenDune-Director.git)
+cd OpenDune-Director
+```
 # Detail your startup/service commands here
+
+# ✅ Final Notes
+
+Parts of this guide have been written by AI (gemini), mostly the visual parts and the details of the guide. Most of the work is based on template I am working to import .vhdx .qcow2 and other formats to my proxmox hosts.
+
+Happy management. 🏜️
