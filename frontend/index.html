@@ -57,7 +57,6 @@
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
             <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">📦 Kubernetes Cluster Zones</h2>
             <div class="space-y-3">
-                <!-- Zone Row Template -->
                 <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-800">
                     <div>
                         <div class="font-medium">Judean People's Front (HB-1)</div>
@@ -104,15 +103,31 @@
         <!-- CARD 4: INFRASTRUCTURE CLUSTER MANAGEMENT CONTROLS -->
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md flex flex-col justify-between">
             <div>
-                <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">🛠️ System Control Panel</h2>
-                <p class="text-sm text-gray-400 mb-4">Direct commands executing inside the master server node container pipeline.</p>
+                <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-2 text-orange-300">🛠️ System Control Panel</h2>
+                
+                <!-- ⚠️ LIABILITY DISCLAIMER BANNER -->
+                <div class="bg-red-950/40 border border-red-800 text-red-300 p-3 rounded text-xs mb-4 leading-relaxed">
+                    <strong>⚠️ LIABILITY & RISK NOTICE:</strong> This manager tool is in active development. Use with extreme caution. The authors are not held responsible for data loss, server configuration corruption, or unexpected cluster crashes. This interface triggers the official background server files and deployment scripts provided natively by <strong>Funcom</strong>.
+                </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-                <button id="btn-restart" class="bg-gray-900 hover:bg-gray-700 text-gray-200 border border-gray-700 py-2 px-4 rounded transition-all text-sm font-medium">
-                    🔄 Restart Cluster Pods
-                </button>
-                <button id="btn-update" class="bg-gray-900 hover:bg-gray-700 text-gray-200 border border-gray-700 py-2 px-4 rounded transition-all text-sm font-medium">
-                    🚀 Run `./battlegroup update`
+            
+            <!-- CONTROLS CONTAINER -->
+            <div class="space-y-3">
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="btn-start" class="bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
+                        ▶ Start Pods
+                    </button>
+                    <button id="btn-stop" class="bg-red-900/40 hover:bg-red-800/60 text-red-300 border border-red-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
+                        ■ Stop Pods
+                    </button>
+                    <button id="btn-restart" class="bg-gray-900 hover:bg-gray-700 text-gray-200 border border-gray-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
+                        🔄 Cycle/Restart
+                    </button>
+                </div>
+                
+                <!-- PROGRESSIVE SEQUENTIAL UPDATE BUTTON -->
+                <button id="btn-update" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 px-4 rounded text-xs uppercase tracking-widest transition-colors shadow-md">
+                    🚀 Run Safe Server File Update
                 </button>
             </div>
         </section>
@@ -122,7 +137,8 @@
     <footer class="text-center py-8 text-xs text-gray-500">
         OpenDune-Director • Fully Open Source Under GNU AGPLv3 License Protection
     </footer>
-<!-- FRONTEND PLUMBING: CONNECTING TO FASTAPI BACKEND -->
+
+    <!-- FRONTEND PLUMBING: CONNECTING TO FASTAPI BACKEND -->
     <script>
         const API_BASE = ""; // Relative paths since frontend is hosted on the same port
 
@@ -187,44 +203,78 @@
                 if (result.success) {
                     statusIndicator.innerText = "Cluster Online (K3s)";
                     statusIndicator.className = "text-sm font-medium text-gray-300";
-                    
-                    // You can add logic here to dynamically repaint rows if needed,
-                    // but keeping the indicator solid for stability.
                 }
             } catch (error) {
                 console.error("Cluster Status Sync Error:", error);
             }
         }
 
-        // 4. INFRASTRUCTURE BUTTON CONTROLS (RESTART PLUGINS)
-        async function triggerZoneRestart(zoneType) {
-            if (!confirm(`Are you sure you want to perform a rolling restart on the ${zoneType} deployment?`)) return;
-            
+        // 4. COMMAND RUNNER FOR CORE INFRASTRUCTURE BUTTONS
+        async function sendClusterCommand(action, zoneType) {
             try {
-                const response = await fetch(`${API_BASE}/api/restart/${zoneType}`, { method: 'POST' });
+                const response = await fetch(`${API_BASE}/api/zone/${zoneType}/${action}`, { method: 'POST' });
                 const result = await response.json();
                 if (response.ok && result.success) {
-                    alert(`🔄 Restart sequence initiated for ${zoneType}. Pods will cycle smoothly.`);
+                    alert(`✅ Command [${action.toUpperCase()}] executed successfully on target cluster zone.`);
                 } else {
-                    alert(`❌ Action Failed: ${result.detail || "Check server logs"}`);
+                    alert(`❌ Command Error: ${result.detail || "Action rejected by cluster master node."}`);
                 }
             } catch (error) {
-                alert(`❌ Network Failure: ${error.message}`);
+                alert(`❌ Connection Failure: ${error.message}`);
             }
         }
 
-        // Bind the button actions to the infrastructure script
-        document.getElementById('btn-restart').addEventListener('click', () => triggerZoneRestart('hb1'));
+        // 5. SEQUENTIAL ACTION ROUTER WITH STRICT BACKUP SAFETY PROMPT
+        async function triggerSafeUpdateSequence(zoneType) {
+            // Step 1: Prompt user for confirmation of server backup status
+            const currentBackupVerified = confirm("❓ SAFETY CHECK:\nHave you taken a manual snapshot or backup of your server data before initiating this file update?");
+            
+            if (!currentBackupVerified) {
+                // If they click 'Cancel' (No), abort execution cleanly
+                alert("🛑 UPDATE ABORTED:\nPlease run the update routine again after your backup has been completed successfully.");
+                return;
+            }
+
+            // If they click 'OK' (Yes), confirm intent to bring down the environment
+            if (!confirm("⚠️ Proceeding with Server Update:\nThis will safely STOP your active map pods, execute the official Funcom game files update routine, and RESTART your cluster. Players will be disconnected. Proceed?")) return;
+
+            const updateBtn = document.getElementById('btn-update');
+            updateBtn.innerText = "⏳ PROCESSING UPDATE (DO NOT CLOSE)...";
+            updateBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/zone/${zoneType}/safe-update`, { method: 'POST' });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert("🎉 SUCCESS:\n" + result.message);
+                } else {
+                    alert(`❌ UPDATE ERROR:\n${result.detail || "The update sequence failed during execution."}`);
+                }
+            } catch (error) {
+                alert(`❌ Fatal Network Timeout: ${error.message}`);
+            } finally {
+                updateBtn.innerText = "🚀 Run Safe Server File Update";
+                updateBtn.disabled = false;
+            }
+        }
+
+        // BIND EVENT LISTENERS TO INTERFACE BUTTONS
+        document.getElementById('btn-start').addEventListener('click', () => sendClusterCommand('start', 'hb1'));
+        document.getElementById('btn-stop').addEventListener('click', () => sendClusterCommand('stop', 'hb1'));
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            if(confirm("Perform a rolling restart on active game pods?")) sendClusterCommand('restart', 'hb1');
+        });
+        document.getElementById('btn-update').addEventListener('click', () => triggerSafeUpdateSequence('hb1'));
 
         // INITIALIZATION EVENTS ON RUNTIME
         window.addEventListener('DOMContentLoaded', () => {
-            loadConfig(); // Get data immediately on load
+            loadConfig(); // Get .ini data immediately on page execution
             updateClusterStatus();
             
             // Poll the Kubernetes cluster loop every 5 seconds to track pod stability
             setInterval(updateClusterStatus, 5000);
         });
     </script>
-    
+
 </body>
 </html>
