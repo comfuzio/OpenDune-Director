@@ -1,9 +1,6 @@
 import os
 import configparser
 
-# Define the standard path to Funcom's configuration folder
-# We will use an environment variable fallback so it works natively now, 
-# and can easily map to a Docker volume later!
 INI_PATH = os.getenv(
     "DUNE_CONFIG_PATH", 
     "/home/dune/.dune/download/scripts/setup/config/UserGame.ini"
@@ -11,71 +8,63 @@ INI_PATH = os.getenv(
 
 def read_server_config():
     """
-    Reads the UserGame.ini file and extracts specific server variables.
+    Reads the specific Funcom gameplay subsystems from UserGame.ini.
     """
     if not os.path.exists(INI_PATH):
-        return {
-            "success": False, 
-            "error": f"Configuration file not found at {INI_PATH}. Check paths."
-        }
+        return {"success": False, "error": "Configuration file not found."}
     
     try:
-        config = configparser.ConfigParser(strict=False, allow_no_value=True)
-        # Unreal Engine sometimes uses case-sensitive keys, so we preserve case
+        config = configparser.ConfigParser(strict=False, allow_no_value=True, interpolation=None)
         config.optionxform = str 
         config.read(INI_PATH)
         
-        # Target the specific section Funcom uses for general server settings
-        # Note: If Funcom nested these under a specific block like [/Script/Engine.GameSession],
-        # adjust the section string below accordingly.
-        section = "ServerSettings" 
-        
-        if not config.has_section(section):
-            # Fallback if the section name is slightly different in your version
-            return {
-                "success": False, 
-                "error": f"Could not find [ServerSettings] section in .ini file."
-            }
+        # Pull values carefully, falling back to defaults if they don't exist yet
+        pvp_sec = "/Script/DuneSandbox.PvpPveSettings"
+        safe_sec = "/Script/DuneSandbox.SecurityZonesSubsystem"
+        storm_sec = "/Script/DuneSandbox.SandStormConfig"
 
+        # Convert strings to actual booleans for our JavaScript frontend
         return {
             "success": True,
             "data": {
-                "world_name": config.get(section, "ServerName", fallback="Romani Ite Domum"),
-                "password": config.get(section, "ServerPassword", fallback=""),
-                "max_players": config.getint(section, "MaxPlayers", fallback=100)
+                "force_pvp": config.get(pvp_sec, "m_bShouldForceEnablePvpOnAllPartitions", fallback="False") == "True",
+                "security_zones": config.get(safe_sec, "m_bAreSecurityZonesEnabled", fallback="True") == "True",
+                "coriolis_storm": config.get(storm_sec, "m_bCoriolisAutoSpawnEnabled", fallback="True") == "True"
             }
         }
-
     except Exception as e:
-        return {"success": False, "error": f"Failed to parse .ini file: {str(e)}"}
+        return {"success": False, "error": str(e)}
 
 
-def write_server_config(world_name, password, max_players):
+def write_server_config(force_pvp, security_zones, coriolis_storm):
     """
-    Safely edits and saves the specific variables back to the UserGame.ini file.
+    Writes updated toggles back into their specific Funcom header sections.
     """
     if not os.path.exists(INI_PATH):
-        return {"success": False, "error": "Configuration file missing. Cannot write changes."}
+        return {"success": False, "error": "Configuration file missing."}
         
     try:
-        config = configparser.ConfigParser(strict=False, allow_no_value=True)
+        config = configparser.ConfigParser(strict=False, allow_no_value=True, interpolation=None)
         config.optionxform = str
         config.read(INI_PATH)
         
-        section = "ServerSettings"
-        if not config.has_section(section):
-            config.add_section(section)
-            
-        # Update only our targeted keys
-        config.set(section, "ServerName", str(world_name))
-        config.set(section, "ServerPassword", str(password))
-        config.set(section, "MaxPlayers", str(max_players))
+        pvp_sec = "/Script/DuneSandbox.PvpPveSettings"
+        safe_sec = "/Script/DuneSandbox.SecurityZonesSubsystem"
+        storm_sec = "/Script/DuneSandbox.SandStormConfig"
+
+        # Ensure headers exist before writing
+        for sec in [pvp_sec, safe_sec, storm_sec]:
+            if not config.has_section(sec):
+                config.add_section(sec)
+                
+        # Write back as standard Unreal text strings
+        config.set(pvp_sec, "m_bShouldForceEnablePvpOnAllPartitions", "True" if force_pvp else "False")
+        config.set(safe_sec, "m_bAreSecurityZonesEnabled", "True" if security_zones else "False")
+        config.set(storm_sec, "m_bCoriolisAutoSpawnEnabled", "True" if coriolis_storm else "False")
         
-        # Write the changes back to the file safely
         with open(INI_PATH, 'w') as configfile:
             config.write(configfile)
             
-        return {"success": True, "message": "UserGame.ini updated successfully."}
-        
+        return {"success": True, "message": "UserGame.ini mechanics updated successfully."}
     except Exception as e:
-        return {"success": False, "error": f"Failed to write to .ini file: {str(e)}"}
+        return {"success": False, "error": str(e)}
