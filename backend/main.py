@@ -48,43 +48,49 @@ async def save_config_endpoint(payload: ConfigUpdate):
 # 3. CONSOLIDATED DYNAMIC TELEMETRY ROUTER (CLUSTERS & PLAYERS)
 @app.get("/api/status")
 async def get_cluster_status_endpoint():
-    # Queries the master CLI script to return verified operational facts
     return k8s_monitor.get_cluster_and_metrics()
 
-# 4. ENVIRONMENT COMMAND CONTROL ENDPOINTS
+# 4. ENVIRONMENT COMMAND CONTROL ENDPOINTS (DIRECT COMMAND ROUTING)
 @app.post("/api/zone/{zone_type}/start")
 async def start_zone(zone_type: str):
-    result = k8s_monitor.set_zone_scale(zone_type, 1)
+    # Maps 'hb1' dashboard button target to your real 'Survival_1' sector
+    target_map = "Survival_1" if zone_type == "hb1" else zone_type
+    result = k8s_monitor.execute_battlegroup_action("start", target_map)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
 @app.post("/api/zone/{zone_type}/stop")
 async def stop_zone(zone_type: str):
-    result = k8s_monitor.set_zone_scale(zone_type, 0)
+    target_map = "Survival_1" if zone_type == "hb1" else zone_type
+    result = k8s_monitor.execute_battlegroup_action("stop", target_map)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
 @app.post("/api/zone/{zone_type}/restart")
 async def restart_zone(zone_type: str):
-    # Sequential cluster toggle to simulate an explicit instance cycle safely
-    k8s_monitor.set_zone_scale(zone_type, 0)
-    result = k8s_monitor.set_zone_scale(zone_type, 1)
+    target_map = "Survival_1" if zone_type == "hb1" else zone_type
+    result = k8s_monitor.execute_battlegroup_action("restart", target_map)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
-    return {"success": True, "message": "Zone cycle complete."}
+    return result
 
 @app.post("/api/zone/{zone_type}/safe-update")
 async def safe_update_zone(zone_type: str):
-    try:
-        k8s_monitor.set_zone_scale(zone_type, 0)
-        # Directly triggers Funcom's official script update action parameter
-        subprocess.run(["sudo", "/home/dune/.dune/download/scripts/setup/battlegroup", "update"], check=True)
-        k8s_monitor.set_zone_scale(zone_type, 1)
-        return {"success": True, "message": "Cluster safely stepped through file update sequence."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    target_map = "Survival_1" if zone_type == "hb1" else zone_type
+    
+    # 1. Stop the target map safely
+    k8s_monitor.execute_battlegroup_action("stop", target_map)
+    
+    # 2. Run the update with sudo privileges
+    result = k8s_monitor.execute_battlegroup_action("update")
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+        
+    # 3. Start the target map sector back up
+    k8s_monitor.execute_battlegroup_action("start", target_map)
+    return {"success": True, "message": "Cluster server file update completed successfully via root execution parameters."}
 
 if __name__ == "__main__":
     import uvicorn
