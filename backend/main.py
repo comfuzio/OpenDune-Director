@@ -59,6 +59,30 @@ async def update_server_config(payload: ConfigUpdate):
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
+@app.post("/api/zone/{zone_type}/start")
+async def start_zone(zone_type: str):
+    """Scales deployment up to 1 replica."""
+    result = k8s_monitor.set_zone_scale(zone_type, 1)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+@app.post("/api/zone/{zone_type}/stop")
+async def stop_zone(zone_type: str):
+    """Scales deployment down to 0 replicas (Stops the instance)."""
+    result = k8s_monitor.set_zone_scale(zone_type, 0)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+@app.post("/api/zone/{zone_type}/safe-update")
+async def safe_update_zone(zone_type: str):
+    """Triggers the strict Stop -> Update -> Start sequence."""
+    result = k8s_monitor.run_sequential_update(zone_type)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
 # -------------------------------------------------------------------------
 # 2. FRONTEND ROUTING (Serving the dashboard page)
 # -------------------------------------------------------------------------
