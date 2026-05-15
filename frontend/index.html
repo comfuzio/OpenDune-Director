@@ -6,7 +6,7 @@
     <title>OpenDune-Director</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen font-sans antialiased selection:bg-orange-500 selection:text-white">
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans antialiased selection:bg-orange-500 selection:text-white pb-12">
 
     <!-- Top Navigation Bar -->
     <header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-lg">
@@ -65,18 +65,18 @@
             </div>
         </section>
 
-        <!-- CARD 3: GAME MONITOR & INTERVAL TRACKER -->
+        <!-- CARD 3: GAME MONITOR (POPULATION AND INTERCEPTED PLAYER IPS) -->
         <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl flex flex-col justify-between">
             <div>
                 <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 tracking-wide uppercase">📡 Population Telemetry</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center mb-6">
-                    <div class="bg-gray-900 p-5 rounded-lg border border-gray-800">
-                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Total Cluster Players</div>
-                        <div id="metric-players" class="text-3xl md:text-4xl font-black text-white tracking-tight">-- / --</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center mb-4">
+                    <div class="bg-gray-900 p-4 rounded-lg border border-gray-800">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Cluster Players</div>
+                        <div id="metric-players" class="text-2xl md:text-3xl font-black text-white tracking-tight">-- / --</div>
                     </div>
-                    <div class="bg-gray-900 p-5 rounded-lg border border-gray-800 flex flex-col justify-center items-center">
-                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Monitor Refresh Speed</div>
-                        <select id="interval-selector" class="bg-gray-800 border border-gray-700 text-xs md:text-sm font-bold rounded-lg p-2 px-3 text-orange-300 focus:outline-none focus:border-orange-500 cursor-pointer w-full text-center">
+                    <div class="bg-gray-900 p-4 rounded-lg border border-gray-800 flex flex-col justify-center items-center">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Monitor Refresh Speed</div>
+                        <select id="interval-selector" class="bg-gray-800 border border-gray-700 text-xs font-bold rounded-lg p-1.5 px-3 text-orange-300 focus:outline-none focus:border-orange-500 cursor-pointer w-full text-center">
                             <option value="1000">🚀 Aggressive (1s)</option>
                             <option value="5000" selected>🍃 Balanced (5s)</option>
                             <option value="10000">⏳ Conservative (10s)</option>
@@ -84,13 +84,22 @@
                     </div>
                 </div>
                 
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Active Radar Tracking:</div>
-                <div id="location-breakdown-list" class="space-y-2.5 max-h-40 overflow-y-auto pr-1">
-                    <div class="text-sm text-gray-500 italic">All active sectors currently empty.</div>
+                <!-- RADAR LAYER FOR PLAYER IPS -->
+                <div class="mt-2">
+                    <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">📍 Live Sector Location Distribution:</div>
+                    <div id="location-breakdown-list" class="space-y-2 max-h-24 overflow-y-auto mb-4 pr-1"></div>
+
+                    <div class="text-[11px] font-bold text-orange-400 uppercase tracking-widest mb-2 flex items-center space-x-1.5">
+                        <span>📡 Network Peer Interceptor Radar (Player IPs):</span>
+                    </div>
+                    <div id="player-ip-list" class="space-y-1.5 max-h-24 overflow-y-auto font-mono text-xs pr-1">
+                        <div class="text-xs text-gray-500 italic">No network connection footprints intercepted.</div>
+                    </div>
                 </div>
             </div>
-            <div class="bg-gray-900 p-3 rounded-lg border border-gray-800 mt-6 text-center text-xs text-gray-500 font-mono tracking-wide">
-                Ecosystem metrics queried natively via root CLI runtime layers.
+            <div class="mt-4 pt-2 border-t border-gray-700/60 flex justify-between items-center text-[10px] text-gray-500 tracking-wide uppercase font-bold">
+                <span>Intercept Data Bounds: UDP Sockets</span>
+                <span class="text-orange-400/80">RCON Bypass Layer Active</span>
             </div>
         </section>
 
@@ -101,8 +110,6 @@
                 <div id="disclaimer-panel" class="bg-red-950/40 border border-red-900/60 text-red-300 p-4 rounded-lg text-xs leading-relaxed mb-4">
                     <strong>⚠️ LIABILITY & RISK NOTICE:</strong> This manager tool is in active development. Use with extreme caution. The authors are not held responsible for data loss, server configuration corruption, or unexpected cluster crashes. This interface triggers the official background server files and deployment scripts provided natively by <strong>Funcom</strong>.
                 </div>
-                
-                <!-- 📟 DYNAMIC STREAMING CONSOLE WORKSPACE (HIDDEN UNTIL UPDATE INITIATED) -->
                 <div id="console-wrapper" class="hidden mb-4">
                     <div class="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1.5 flex justify-between items-center">
                         <span>📟 Live Battlegroup Standard Output Stream:</span>
@@ -130,6 +137,28 @@
         </section>
 
     </main>
+
+    <!-- 🛠️ NEW PRODUCTION EXTRA CARD: DYNAMIC HOST SYSTEM OS METRICS INFRASTRUCTURE STRIP -->
+    <section class="max-w-7xl mx-auto px-4 md:px-8">
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 md:p-6 shadow-xl grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">💻 Host CPU Load</div>
+                <div id="sys-cpu" class="text-sm md:text-base font-black text-white">--%</div>
+            </div>
+            <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">🧠 Host Memory allocations</div>
+                <div id="sys-ram" class="text-xs md:text-sm font-bold text-gray-300">--</div>
+            </div>
+            <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">💽 Disk I/O Transfer Speed</div>
+                <div id="sys-disk" class="text-[11px] font-medium text-orange-300 font-mono">--</div>
+            </div>
+            <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">🌐 Gateway Interface Bandwidth</div>
+                <div id="sys-network" class="text-[11px] font-medium text-emerald-400 font-mono">--</div>
+            </div>
+        </div>
+    </section>
 
     <footer class="text-center py-12 text-xs text-gray-600 tracking-widest uppercase font-semibold">
         OpenDune-Director • Fully Open Source Under GNU AGPLv3 License Protection
@@ -187,6 +216,7 @@
                 const container = document.getElementById('pod-zones-container');
                 const playersIndicator = document.getElementById('metric-players');
                 const breakdownList = document.getElementById('location-breakdown-list');
+                const ipListContainer = document.getElementById('player-ip-list');
                 
                 if (!response.ok) {
                     statusIndicator.innerText = "System Offline (CLI Error)";
@@ -216,6 +246,12 @@
                     
                     playersIndicator.innerText = `${result.total_players} / ${result.max_capacity}`;
                     
+                    // PAINT HARDWARE STRIP TELEM METRICS
+                    document.getElementById('sys-cpu').innerText = result.telemetry.cpu;
+                    document.getElementById('sys-ram').innerText = result.telemetry.ram;
+                    document.getElementById('sys-disk').innerText = result.telemetry.disk;
+                    document.getElementById('sys-network').innerText = result.telemetry.network;
+
                     container.innerHTML = "";
                     breakdownList.innerHTML = "";
                     
@@ -226,50 +262,64 @@
                     if (mapKeys.length === 0) {
                         container.innerHTML = `<div class="text-sm text-gray-400 italic text-center py-8">No active game server segments detected in this namespace.</div>`;
                         breakdownList.innerHTML = `<div class="text-xs text-gray-500 italic py-1">Cluster empty.</div>`;
-                        return;
-                    }
+                    } else {
+                        mapKeys.forEach(mapKey => {
+                            const zoneData = zones[mapKey];
+                            const isRunning = zoneData.status === "Running";
+                            const badgeClass = isRunning 
+                                ? "bg-green-950/60 text-green-400 border-green-800/80" 
+                                : "bg-yellow-950/60 text-yellow-400 border-yellow-800/80";
 
-                    mapKeys.forEach(mapKey => {
-                        const zoneData = zones[mapKey];
-                        const isRunning = zoneData.status === "Running";
-                        const badgeClass = isRunning 
-                            ? "bg-green-950/60 text-green-400 border-green-800/80" 
-                            : "bg-yellow-950/60 text-yellow-400 border-yellow-800/80";
-
-                        const rowHtml = `
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800 space-y-3 sm:space-y-0 hover:border-gray-700 transition-colors shadow-inner">
-                                <div>
-                                    <div class="font-bold text-sm md:text-base flex items-center space-x-2">
-                                        <span class="text-white">${zoneData.display_name}</span>
-                                        <span class="bg-gray-800 border border-gray-700 text-orange-400 px-2 py-0.5 rounded font-black font-mono text-[11px]">👥 ${zoneData.players} In</span>
+                            const rowHtml = `
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800 space-y-3 sm:space-y-0 hover:border-gray-700 transition-colors shadow-inner">
+                                    <div>
+                                        <div class="font-bold text-sm md:text-base flex items-center space-x-2">
+                                            <span class="text-white">${zoneData.display_name}</span>
+                                            <span class="bg-gray-800 border border-gray-700 text-orange-400 px-2 py-0.5 rounded font-black font-mono text-[11px]">👥 ${zoneData.players} In</span>
+                                        </div>
+                                        <div class="text-[11px] text-gray-500 font-mono mt-1 tracking-wider">${mapKey}</div>
                                     </div>
-                                    <div class="text-[11px] text-gray-500 font-mono mt-1 tracking-wider">${mapKey}</div>
-                                </div>
-                                
-                                <div class="flex items-center space-x-2 justify-end">
-                                    <span class="${badgeClass} border text-[10px] px-2.5 py-1 rounded font-black uppercase tracking-widest mr-2">${zoneData.status}</span>
-                                    <button onclick="sendTargetedCommand('start', '${mapKey}')" class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">▶</button>
-                                    <button onclick="sendTargetedCommand('stop', '${mapKey}')" class="bg-red-950 text-red-400 border border-red-800/60 hover:bg-red-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">■</button>
-                                    <button onclick="sendTargetedCommand('restart', '${mapKey}')" class="bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white p-2 px-2.5 text-xs font-black rounded-md transition-all active:scale-[0.92]">🔄</button>
-                                </div>
-                            </div>
-                        `;
-                        container.insertAdjacentHTML('beforeend', rowHtml);
-
-                        if (zoneData.players > 0) {
-                            activeLocationCount++;
-                            const breakdownHtml = `
-                                <div class="flex justify-between items-center bg-gray-900/60 p-3 rounded-lg border border-gray-800 text-xs md:text-sm">
-                                    <span class="text-gray-300 font-bold">📍 ${zoneData.display_name}</span>
-                                    <span class="text-orange-400 font-black font-mono bg-orange-950/40 border border-orange-900/40 p-1 px-3 rounded-md">${zoneData.players} Players</span>
+                                    
+                                    <div class="flex items-center space-x-2 justify-end">
+                                        <span class="${badgeClass} border text-[10px] px-2.5 py-1 rounded font-black uppercase tracking-widest mr-2">${zoneData.status}</span>
+                                        <button onclick="sendTargetedCommand('start', '${mapKey}')" class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">▶</button>
+                                        <button onclick="sendTargetedCommand('stop', '${mapKey}')" class="bg-red-950 text-red-400 border border-red-800/60 hover:bg-red-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">■</button>
+                                        <button onclick="sendTargetedCommand('restart', '${mapKey}')" class="bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white p-2 px-2.5 text-xs font-black rounded-md transition-all active:scale-[0.92]">🔄</button>
+                                    </div>
                                 </div>
                             `;
-                            breakdownList.insertAdjacentHTML('beforeend', breakdownHtml);
-                        }
-                    });
+                            container.insertAdjacentHTML('beforeend', rowHtml);
 
-                    if (activeLocationCount === 0) {
-                        breakdownList.innerHTML = `<div class="text-xs text-gray-500 italic py-1 tracking-wide">All active sectors currently empty.</div>`;
+                            if (zoneData.players > 0) {
+                                activeLocationCount++;
+                                const breakdownHtml = `
+                                    <div class="flex justify-between items-center bg-gray-900/60 p-2 px-3 rounded border border-gray-800 text-xs font-semibold">
+                                        <span class="text-gray-300">📍 ${zoneData.display_name}</span>
+                                        <span class="text-orange-400 font-black font-mono">${zoneData.players} Online</span>
+                                    </div>
+                                `;
+                                breakdownList.insertAdjacentHTML('beforeend', breakdownHtml);
+                            }
+                        });
+                        if (activeLocationCount === 0) {
+                            breakdownList.innerHTML = `<div class="text-xs text-gray-500 italic py-1 tracking-wide">All active sectors currently empty.</div>`;
+                        }
+                    }
+
+                    // PAINT CONNECTED PLAYER IPS
+                    ipListContainer.innerHTML = "";
+                    if (result.player_ips && result.player_ips.length > 0) {
+                        result.player_ips.forEach(ip => {
+                            const ipRow = `
+                                <div class="flex justify-between items-center bg-gray-900 p-2 rounded border border-gray-800 hover:border-gray-700 transition-colors">
+                                    <span class="text-emerald-400 font-bold font-mono">👤 ${ip}</span>
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wide bg-gray-800 p-0.5 px-2 rounded border border-gray-700">Authenticated Peer</span>
+                                </div>
+                            `;
+                            ipListContainer.insertAdjacentHTML('beforeend', ipRow);
+                        });
+                    } else {
+                        ipListContainer.innerHTML = `<div class="text-xs text-gray-500 italic">No network connection footprints intercepted.</div>`;
                     }
                 }
             } catch (error) {
@@ -298,7 +348,6 @@
             }
         }
 
-        // ASYNCHRONOUS LOG INTERCEPTOR ENGINE FOR LIVE UPDATE REPORTING
         async function triggerGlobalSafeUpdateSequence() {
             const currentBackupVerified = confirm("❓ SAFETY CHECK:\nHave you taken a manual snapshot or backup of your server data before initiating this file update?");
             if (!currentBackupVerified) return;
@@ -310,7 +359,6 @@
             const consoleWrapper = document.getElementById('console-wrapper');
             const terminalConsole = document.getElementById('terminal-console');
 
-            // Swap disclaimer layout for the active visual terminal environment
             disclaimerPanel.classList.add('hidden');
             consoleWrapper.classList.remove('hidden');
             terminalConsole.innerText = "Connecting to background service log wheels...\n";
@@ -329,11 +377,8 @@
                     
                     const chunkText = decoder.decode(value, { stream: true });
                     terminalConsole.innerText += chunkText;
-                    
-                    // Force box layer to stick completely to bottom logs scroll bounds automatically
                     terminalConsole.scrollTop = terminalConsole.scrollHeight;
                 }
-                
                 runUnifiedDashboardSync();
             } catch (error) {
                 terminalConsole.innerText += `\n❌ STREAM INTERRUPTED: ${error.message}\n`;
