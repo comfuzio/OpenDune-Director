@@ -76,7 +76,7 @@
                     </div>
                     <div class="bg-gray-900 p-4 rounded-lg border border-gray-800 flex flex-col justify-center items-center">
                         <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Monitor Refresh Speed</div>
-                        <select id="interval-selector" class="bg-gray-800 border border-gray-700 text-xs font-bold rounded-lg p-1.5 px-3 text-orange-300 focus:outline-none focus:border-orange-500 cursor-pointer w-full text-center">
+                        <select id="interval-selector" class="bg-gray-800 border border-gray-700 text-xs md:text-sm font-bold rounded-lg p-1.5 px-3 text-orange-300 focus:outline-none focus:border-orange-500 cursor-pointer w-full text-center">
                             <option value="1000">🚀 Aggressive (1s)</option>
                             <option value="5000" selected>🍃 Balanced (5s)</option>
                             <option value="10000">⏳ Conservative (10s)</option>
@@ -138,7 +138,7 @@
 
     </main>
 
-    <!-- 🛠️ NEW PRODUCTION EXTRA CARD: DYNAMIC HOST SYSTEM OS METRICS INFRASTRUCTURE STRIP -->
+    <!-- DYNAMIC HOST SYSTEM OS METRICS INFRASTRUCTURE STRIP -->
     <section class="max-w-7xl mx-auto px-4 md:px-8">
         <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 md:p-6 shadow-xl grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
@@ -146,7 +146,7 @@
                 <div id="sys-cpu" class="text-sm md:text-base font-black text-white">--%</div>
             </div>
             <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
-                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">🧠 Host Memory allocations</div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">🧠 Host Memory Allocations</div>
                 <div id="sys-ram" class="text-xs md:text-sm font-bold text-gray-300">--</div>
             </div>
             <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
@@ -271,20 +271,36 @@
                                 : "bg-yellow-950/60 text-yellow-400 border-yellow-800/80";
 
                             const rowHtml = `
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800 space-y-3 sm:space-y-0 hover:border-gray-700 transition-colors shadow-inner">
-                                    <div>
-                                        <div class="font-bold text-sm md:text-base flex items-center space-x-2">
-                                            <span class="text-white">${zoneData.display_name}</span>
-                                            <span class="bg-gray-800 border border-gray-700 text-orange-400 px-2 py-0.5 rounded font-black font-mono text-[11px]">👥 ${zoneData.players} In</span>
+                                <div class="flex flex-col bg-gray-900 p-4 rounded-lg border border-gray-800 hover:border-gray-700 transition-colors shadow-inner space-y-3">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="font-bold text-sm md:text-base flex items-center space-x-2">
+                                                <span class="text-white">${zoneData.display_name}</span>
+                                                <span class="bg-gray-800 border border-gray-700 text-orange-400 px-2 py-0.5 rounded font-black font-mono text-[11px]">👥 ${zoneData.players} In</span>
+                                            </div>
+                                            <div class="text-[11px] text-gray-500 font-mono mt-1 tracking-wider">${mapKey}</div>
                                         </div>
-                                        <div class="text-[11px] text-gray-500 font-mono mt-1 tracking-wider">${mapKey}</div>
+                                        <span class="${badgeClass} border text-[10px] px-2.5 py-1 rounded font-black uppercase tracking-widest">${zoneData.status}</span>
                                     </div>
                                     
-                                    <div class="flex items-center space-x-2 justify-end">
-                                        <span class="${badgeClass} border text-[10px] px-2.5 py-1 rounded font-black uppercase tracking-widest mr-2">${zoneData.status}</span>
-                                        <button onclick="sendTargetedCommand('start', '${mapKey}')" class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">▶</button>
-                                        <button onclick="sendTargetedCommand('stop', '${mapKey}')" class="bg-red-950 text-red-400 border border-red-800/60 hover:bg-red-900 hover:text-white p-2 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">■</button>
-                                        <button onclick="sendTargetedCommand('restart', '${mapKey}')" class="bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white p-2 px-2.5 text-xs font-black rounded-md transition-all active:scale-[0.92]">🔄</button>
+                                    <!-- ACTION UTILITIES FOOTER -->
+                                    <div class="flex flex-wrap items-center justify-between pt-2 border-t border-gray-800/60 gap-2">
+                                        <!-- Persistence Rules Toggles -->
+                                        <div class="flex space-x-1.5 text-[10px] font-bold">
+                                            <button onclick="togglePersistence('make-persistent', '${mapKey}')" title="Force Always Online (MinServers=1)" class="bg-blue-950/40 text-blue-400 border border-blue-900/60 hover:bg-blue-900 hover:text-white p-1 px-2 rounded-md transition-colors">
+                                                ⚓ Keep Awake
+                                            </button>
+                                            <button onclick="togglePersistence('make-dynamic', '${mapKey}')" title="Allow Hibernation scaling (MinServers=0)" class="bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-white p-1 px-2 rounded-md transition-colors">
+                                                ⏳ Auto Sleep
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Pod Cycle Actions -->
+                                        <div class="flex items-center space-x-1.5">
+                                            <button onclick="sendTargetedCommand('start', '${mapKey}')" title="Wake Up Sector" class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-900 hover:text-white p-1.5 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">▶</button>
+                                            <button onclick="sendTargetedCommand('stop', '${mapKey}')" title="Hibernate Sector" class="bg-red-950 text-red-400 border border-red-800/60 hover:bg-red-900 hover:text-white p-1.5 px-3 text-xs font-black rounded-md transition-all active:scale-[0.92]">■</button>
+                                            <button onclick="sendTargetedCommand('restart', '${mapKey}')" title="Cycle Sector" class="bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white p-1.5 px-2.5 text-xs font-black rounded-md transition-all active:scale-[0.92]">🔄</button>
+                                        </div>
                                     </div>
                                 </div>
                             `;
@@ -333,6 +349,21 @@
                 if (response.ok) runUnifiedDashboardSync();
             } catch (error) {
                 console.error(error);
+            }
+        }
+
+        async function togglePersistence(action, mapTarget) {
+            try {
+                const response = await fetch(`${API_BASE}/api/zone/persistence/${action}/${mapTarget}`, { method: 'POST' });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert(`✨ Policy Updated:\n${result.message}\n\nNote: If the map was currently asleep, the system will begin initializing its persistent background pod automatically!`);
+                    runUnifiedDashboardSync();
+                } else {
+                    alert(`❌ Policy Action Rejected: ${result.detail || "Verification failed."}`);
+                }
+            } catch (error) {
+                alert(`❌ Network failure mapping persistence rules: ${error.message}`);
             }
         }
 
