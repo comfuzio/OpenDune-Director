@@ -75,19 +75,25 @@ def get_cluster_and_metrics():
         "success": True,
         "cluster_healthy": cluster_healthy,
         "zones": detected_zones,
-        "total_players": f"{total_players} / 100" # Maps automatically to your session dashboard
+        "total_players": f"{total_players} / 100"
     }
 
-def set_zone_scale(zone_type, scale_count):
+def execute_battlegroup_action(action, map_name="Survival_1"):
     """
-    Uses the official binary architecture instructions to command specific sectors.
+    Executes native commands: start, stop, restart, update.
+    Forces 'sudo' strictly for the update sequence.
     """
     try:
-        action = "start" if scale_count > 0 else "stop"
-        # Map dashboard target keywords cleanly to actual operational commands
-        target_map = "Survival_1" if zone_type == "hb1" else zone_type
-        
-        subprocess.run([BATTLEGROUP_BIN, action, target_map], check=True)
-        return {"success": True}
+        if action == "update":
+            # Update requires sudo privilege execution
+            cmd = ["sudo", BATTLEGROUP_BIN, "update"]
+        else:
+            # start, stop, restart run normally or via sudo if cluster permissions require it
+            cmd = [BATTLEGROUP_BIN, action, map_name]
+            
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        return {"success": True, "message": result.stdout}
+    except subprocess.CalledProcessError as e:
+        return {"success": False, "error": e.stderr or e.stdout}
     except Exception as e:
         return {"success": False, "error": str(e)}
