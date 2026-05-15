@@ -27,57 +27,50 @@
     <!-- Main Dashboard Body Grid -->
     <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        <!-- CARD 1: GLOBAL CONFIGURATION MANAGER -->
+        <!-- CARD 1: DUNE BATTLEGROUP GAMEPLAY CONTROLS -->
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
-            <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">⚙️ Server Profile Settings</h2>
-            <form id="config-form" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">World Server Name (Global Browser)</label>
-                    <input type="text" id="world-name" value="Romani Ite Domum" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white focus:outline-none focus:border-orange-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Server Password</label>
-                    <input type="password" id="server-password" value="********" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white focus:outline-none focus:border-orange-500">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
+            <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">⚙️ Battlegroup Gameplay Toggles</h2>
+            <form id="config-form" class="space-y-5">
+                
+                <!-- PVP Toggle -->
+                <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-800">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Max Combined Players</label>
-                        <input type="number" id="max-players" value="100" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white focus:outline-none focus:border-orange-500">
+                        <label class="block text-sm font-semibold text-white">Force PvP Globally</label>
+                        <span class="text-xs text-gray-400 block">Overrides partition safety rules across all maps.</span>
                     </div>
-                    <div class="flex items-end">
-                        <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2 px-4 rounded transition-colors shadow">
-                            Save Changes (.ini)
-                        </button>
-                    </div>
+                    <input type="checkbox" id="force-pvp" class="w-5 h-5 accent-orange-500 rounded cursor-pointer">
                 </div>
+
+                <!-- Security Zone Toggle -->
+                <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-800">
+                    <div>
+                        <label class="block text-sm font-semibold text-white">Enable Security Zones</label>
+                        <span class="text-xs text-gray-400 block">Enforces safe trade hubs where combat is prohibited.</span>
+                    </div>
+                    <input type="checkbox" id="security-zones" class="w-5 h-5 accent-orange-500 rounded cursor-pointer">
+                </div>
+
+                <!-- Coriolis Storm Toggle -->
+                <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-800">
+                    <div>
+                        <label class="block text-sm font-semibold text-white">Coriolis Auto-Spawn Storms</label>
+                        <span class="text-xs text-gray-400 block">Allows environmental sandstorms to dynamically wipe builds.</span>
+                    </div>
+                    <input type="checkbox" id="coriolis-storm" class="w-5 h-5 accent-orange-500 rounded cursor-pointer">
+                </div>
+
+                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 px-4 rounded text-xs uppercase tracking-wider transition-colors shadow">
+                    Apply Global Subsystem Toggles (.ini)
+                </button>
             </form>
         </section>
 
         <!-- CARD 2: REAL-TIME POD MONITOR -->
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
             <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">📦 Kubernetes Cluster Zones</h2>
-            <div class="space-y-3">
-                <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-800">
-                    <div>
-                        <div class="font-medium">Judean People's Front (HB-1)</div>
-                        <div class="text-xs text-gray-400">Pod: seabass-server-bg-hb1-xxxxxx</div>
-                    </div>
-                    <span class="bg-green-900/50 text-green-400 border border-green-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">Running</span>
-                </div>
-                <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-800">
-                    <div>
-                        <div class="font-medium">Judean Popular Front (HB-2)</div>
-                        <div class="text-xs text-gray-400">Pod: seabass-server-bg-hb2-xxxxxx</div>
-                    </div>
-                    <span class="bg-green-900/50 text-green-400 border border-green-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">Running</span>
-                </div>
-                <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-800">
-                    <div>
-                        <div class="font-medium">Deep Desert (Dynamic Expansion)</div>
-                        <div class="text-xs text-gray-400">Pod: seabass-server-bg-deepdesert-xxxxxx</div>
-                    </div>
-                    <span class="bg-yellow-900/50 text-yellow-400 border border-yellow-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">Hibernating</span>
-                </div>
+            <!-- This container starts empty and gets dynamically populated by real K3s data -->
+            <div id="pod-zones-container" class="space-y-3">
+                <div class="text-sm text-gray-500 italic text-center py-4">Querying cluster states...</div>
             </div>
         </section>
 
@@ -87,11 +80,11 @@
             <div class="grid grid-cols-3 gap-4 text-center">
                 <div class="bg-gray-900 p-4 rounded border border-gray-800">
                     <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Active Players</div>
-                    <div id="metric-players" class="text-2xl font-bold text-white">24 / 100</div>
+                    <div id="metric-players" class="text-2xl font-bold text-white">-- / --</div>
                 </div>
                 <div class="bg-gray-900 p-4 rounded border border-gray-800">
                     <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Query Port Ping</div>
-                    <div id="metric-ping" class="text-2xl font-bold text-green-400">12ms</div>
+                    <div id="metric-ping" class="text-2xl font-bold text-green-400">--</div>
                 </div>
                 <div class="bg-gray-900 p-4 rounded border border-gray-800">
                     <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">DB Connections</div>
@@ -142,7 +135,7 @@
     <script>
         const API_BASE = ""; // Relative paths since frontend is hosted on the same port
 
-        // 1. FETCH AND DISPLAY CURRENT .INI CONFIGURATION
+        // 1. FETCH AND DISPLAY CURRENT .INI GAMEPLAY SUBSYSTEMS
         async function loadConfig() {
             try {
                 const response = await fetch(`${API_BASE}/api/config`);
@@ -150,23 +143,23 @@
                 
                 const result = await response.json();
                 if (result.success) {
-                    document.getElementById('world-name').value = result.data.world_name;
-                    document.getElementById('server-password').value = result.data.password;
-                    document.getElementById('max-players').value = result.data.max_players;
+                    document.getElementById('force-pvp').checked = result.data.force_pvp;
+                    document.getElementById('security-zones').checked = result.data.security_zones;
+                    document.getElementById('coriolis-storm').checked = result.data.coriolis_storm;
                 }
             } catch (error) {
                 console.error("Config Load Error:", error);
             }
         }
 
-        // 2. SAVE CONFIGURATION BACK TO .INI FILE
+        // 2. SAVE CONFIGURATION TOGGLES BACK TO .INI FILE
         document.getElementById('config-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const payload = {
-                world_name: document.getElementById('world-name').value,
-                password: document.getElementById('server-password').value,
-                max_players: parseInt(document.getElementById('max-players').value)
+                force_pvp: document.getElementById('force-pvp').checked,
+                security_zones: document.getElementById('security-zones').checked,
+                coriolis_storm: document.getElementById('coriolis-storm').checked
             };
 
             try {
@@ -178,7 +171,7 @@
                 
                 const result = await response.json();
                 if (response.ok && result.success) {
-                    alert("🏜️ Server configuration successfully written to UserGame.ini!");
+                    alert("🏜️ Battlegroup gameplay rules written successfully to UserGame.ini!");
                 } else {
                     alert(`❌ Save Failed: ${result.detail || "Unknown error"}`);
                 }
@@ -187,11 +180,12 @@
             }
         });
 
-        // 3. FETCH AND DISPLAY REAL-TIME KUBERNETES POD STATUSES
+        // 3. FETCH AND DISPLAY REAL-TIME KUBERNETES POD STATUSES (DYNAMICALLY PARSED)
         async function updateClusterStatus() {
             try {
                 const response = await fetch(`${API_BASE}/api/status`);
                 const statusIndicator = document.getElementById('cluster-status');
+                const container = document.getElementById('pod-zones-container');
                 
                 if (!response.ok) {
                     statusIndicator.innerText = "Cluster Error (API Offline)";
@@ -203,6 +197,38 @@
                 if (result.success) {
                     statusIndicator.innerText = "Cluster Online (K3s)";
                     statusIndicator.className = "text-sm font-medium text-gray-300";
+                    
+                    // Reset internal box layouts completely
+                    container.innerHTML = "";
+                    
+                    const zones = result.zones;
+                    const podKeys = Object.keys(zones);
+                    
+                    if (podKeys.length === 0) {
+                        container.innerHTML = `<div class="text-sm text-gray-400 italic text-center py-4">No active game server pods detected in this namespace.</div>`;
+                        return;
+                    }
+
+                    // Loop through active pods returned natively by python logic
+                    podKeys.forEach(podName => {
+                        const podData = zones[podName];
+                        const isRunning = podData.status === "Running";
+                        
+                        const badgeClass = isRunning 
+                            ? "bg-green-900/50 text-green-400 border-green-700" 
+                            : "bg-yellow-900/50 text-yellow-400 border-yellow-700";
+
+                        const rowHtml = `
+                            <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-800">
+                                <div>
+                                    <div class="font-medium">${podData.display_name}</div>
+                                    <div class="text-xs text-gray-500 font-mono">${podName}</div>
+                                </div>
+                                <span class="${badgeClass} border text-xs px-2.5 py-0.5 rounded-full font-semibold">${podData.status}</span>
+                            </div>
+                        `;
+                        container.insertAdjacentHTML('beforeend', rowHtml);
+                    });
                 }
             } catch (error) {
                 console.error("Cluster Status Sync Error:", error);
@@ -230,12 +256,11 @@
             const currentBackupVerified = confirm("❓ SAFETY CHECK:\nHave you taken a manual snapshot or backup of your server data before initiating this file update?");
             
             if (!currentBackupVerified) {
-                // If they click 'Cancel' (No), abort execution cleanly
                 alert("🛑 UPDATE ABORTED:\nPlease run the update routine again after your backup has been completed successfully.");
                 return;
             }
 
-            // If they click 'OK' (Yes), confirm intent to bring down the environment
+            // Step 2: Confirm intent to bring down the environment
             if (!confirm("⚠️ Proceeding with Server Update:\nThis will safely STOP your active map pods, execute the official Funcom game files update routine, and RESTART your cluster. Players will be disconnected. Proceed?")) return;
 
             const updateBtn = document.getElementById('btn-update');
