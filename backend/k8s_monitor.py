@@ -5,8 +5,8 @@ BATTLEGROUP_BIN = "/home/dune/.dune/bin/battlegroup"
 
 def get_cluster_and_metrics():
     """
-    Executes the official Funcom battlegroup binary, detects runtime statuses,
-    maps active server cells dynamically, collects player metrics, and extracts true caps.
+    Executes the official Funcom battlegroup binary, dynamically grabs the true
+    global state (Healthy, Stopped, etc.), and collects player limits.
     """
     try:
         result = subprocess.run(
@@ -26,24 +26,42 @@ def get_cluster_and_metrics():
 
     detected_zones = {}
     total_players = 0
-    max_capacity = 40  # Reliable fallback cap value matching standard private guidelines
+    max_capacity = 40  
     parsing_servers = False
-    cluster_healthy = "Error"
+    
+    # Default fallback state
+    cluster_healthy = "Unknown State"
 
+    # Step 1: Scan explicitly for the Global Battlegroup Status Row
+    for idx, line in enumerate(lines):
+        line = line.strip()
+        if "----------" in line and idx > 0:
+            # The actual data values sit directly underneath the dashed line column headers
+            data_row = lines[idx + 1].strip()
+            row_parts = re.split(r'\s+', data_row)
+            if row_parts:
+                global_status = row_parts[0] # Grabs 'Healthy', 'Stopped', or 'Stopping'
+                if global_status == "Healthy":
+                    cluster_healthy = "Cluster Running"
+                elif global_status == "Stopped":
+                    cluster_healthy = "Cluster Stopped"
+                elif global_status == "Stopping":
+                    cluster_healthy = "Cluster Stopping"
+                else:
+                    cluster_healthy = f"Cluster: {global_status}"
+            break
+
+    # Step 2: Parse individual map instance states
     for line in lines:
         line = line.strip()
         if not line:
             continue
 
-        if "Healthy" in line or "Ready" in line:
-            if "Database" not in line and "Phase" not in line:
-                cluster_healthy = "Cluster Online (K3s)"
-
         if "Map" in line and "Phase" in line and "Players" in line:
             parsing_servers = True
             continue
         
-        if parsing_servers and line.startswith("---"):
+        if parsing_servers and (line.startswith("---") or "No resources found" in line):
             continue
 
         if parsing_servers:
@@ -67,7 +85,7 @@ def get_cluster_and_metrics():
                     "players": players_count  
                 }
 
-    # DYNAMIC SEARCH: Query kubectl for the true custom cap defined inside your active cluster
+    # Step 3: Extract True Cap Space
     try:
         cap_query = subprocess.run(
             ["sudo", "kubectl", "get", "battlegroups", "-o", "jsonpath={.items[*].spec.gameServers.maxPlayers}"],
@@ -77,7 +95,7 @@ def get_cluster_and_metrics():
         if parsed_cap and parsed_cap.isdigit():
             max_capacity = int(parsed_cap)
     except:
-        pass # Fall back calmly to 40 if the custom resource definition layer is hidden
+        pass 
 
     return {
         "success": True,
