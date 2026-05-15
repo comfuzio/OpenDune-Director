@@ -175,15 +175,13 @@ def execute_battlegroup_action(action, map_name=None):
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
             )
         
-        # NEW PERSISTENCE INJECTION MECHANICS
+        # PERSISTENCE INJECTION MECHANICS
         if action == "make-persistent" and map_name:
-            # Executes the native Funcom patch sequence to force MinServers configuration rules
             cmd = ["sudo", BATTLEGROUP_BIN, "config", "set", f"gameServers.{map_name}.minServers=1"]
             subprocess.run(cmd, check=True, capture_output=True, text=True)
             return {"success": True, "message": f"Successfully forced persistent background state for {map_name}."}
             
         if action == "make-dynamic" and map_name:
-            # Reverts the configuration rules back to standard dynamic hibernation states (0 min instances)
             cmd = ["sudo", BATTLEGROUP_BIN, "config", "set", f"gameServers.{map_name}.minServers=0"]
             subprocess.run(cmd, check=True, capture_output=True, text=True)
             return {"success": True, "message": f"Successfully restored adaptive hibernation rules for {map_name}."}
