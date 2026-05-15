@@ -51,20 +51,31 @@ def get_system_telemetry():
     }
 
 def get_connected_player_ips():
-    """Scrapes the host network layer socket pool for external traffic hitting game ports."""
+    """
+    Queries the Linux Kernel connection tracking table directly via sudo to isolate 
+    true external player IPs actively sending UDP replication streams.
+    """
     connected_ips = []
     try:
-        # Standard default game server distribution port ranges
-        game_ports = [7777, 7778, 27015]
+        # Query conntrack for all active UDP streams hitting your Dune game server ports
+        game_ports = ["7777", "7778", "27015"]
+        result = subprocess.run(
+            ["sudo", "conntrack", "-L", "-p", "udp"],
+            capture_output=True, text=True, check=True
+        )
         
-        # Pull active connections via psutil socket networks
-        for conn in psutil.net_connections(kind='udp'):
-            if conn.laddr.port in game_ports and conn.raddr:
-                ip = conn.raddr.ip
-                # Filter out standard local loopback and container orchestration noise
-                if ip not in ["127.0.0.1", "0.0.0.0", "::"] and not ip.startswith("10."):
-                    if ip not in connected_ips:
-                        connected_ips.append(ip)
+        for line in result.stdout.split("\n"):
+            # Ensure the packet log is tracking traffic bound for a game port
+            if any(f"dport={port}" in line for port in game_ports):
+                # Use regex to extract the initial source IP of the packet trail
+                match = re.search(r"src=([\d\.]+)", line)
+                if match:
+                    ip = match.group(1)
+                    # Exclude standard local system loops and internal K3s proxy routing noise
+                    if ip not in ["127.0.0.1", "0.0.0.0"]:
+                        if not (ip.startswith("10.") and ((".42." in ip) or (".244." in ip))):
+                            if ip not in connected_ips:
+                                connected_ips.append(ip)
     except:
         pass
     return connected_ips
@@ -99,13 +110,15 @@ def get_cluster_and_metrics():
         if not line:
             continue
 
+        # 1. Capture the Global State (Check first dashed divider boundary safely)
         if "----------" in line and not parsing_servers and cluster_healthy == "Unknown State":
             data_row = lines[idx + 1].strip()
             row_parts = re.split(r'\s+', data_row)
             if row_parts:
-                global_status = row_parts[0]
+                global_status = row_parts[0]  # Healthy, Stopped, or Stopping
                 cluster_healthy = f"Cluster {global_status}" if global_status in ["Stopped", "Stopping"] else "Cluster Running" if global_status == "Healthy" else f"Cluster: {global_status}"
 
+        # 2. Trigger individual game server mapping blocks
         if "Map" in line and "Phase" in line and "Players" in line:
             parsing_servers = True
             continue
@@ -132,6 +145,7 @@ def get_cluster_and_metrics():
                     "players": players_count  
                 }
 
+    # 3. Dynamic Live Cluster Cap Check Space
     try:
         cap_query = subprocess.run(
             ["sudo", "kubectl", "get", "battlegroups", "-o", "jsonpath={.items[*].spec.gameServers.maxPlayers}"],
@@ -149,8 +163,8 @@ def get_cluster_and_metrics():
         "zones": detected_zones,
         "total_players": str(total_players),
         "max_capacity": str(max_capacity),
-        "telemetry": get_system_telemetry(),      # Pipe system specs onto JSON return
-        "player_ips": get_connected_player_ips()   # Pipe compiled connected client IPs
+        "telemetry": get_system_telemetry(),
+        "player_ips": get_connected_player_ips()
     }
 
 def execute_battlegroup_action(action, map_name=None):
@@ -160,6 +174,7 @@ def execute_battlegroup_action(action, map_name=None):
                 ["sudo", BATTLEGROUP_BIN, "update"],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
             )
+        
         cmd = [BATTLEGROUP_BIN, action, map_name] if map_name else [BATTLEGROUP_BIN, action]
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         return {"success": True, "message": result.stdout}
