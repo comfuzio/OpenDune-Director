@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenDune-Director</title>
-    <!-- Tailwind CSS via CDN for rapid styling without heavy node modules -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
@@ -20,7 +19,7 @@
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
             </span>
-            <span id="cluster-status" class="text-sm font-medium text-gray-300">Cluster Online (K3s)</span>
+            <span id="cluster-status" class="text-sm font-medium text-gray-300">Syncing...</span>
         </div>
     </header>
 
@@ -31,8 +30,6 @@
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
             <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">⚙️ Battlegroup Gameplay Toggles</h2>
             <form id="config-form" class="space-y-5">
-                
-                <!-- PVP Toggle -->
                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-800">
                     <div>
                         <label class="block text-sm font-semibold text-white">Force PvP Globally</label>
@@ -40,8 +37,6 @@
                     </div>
                     <input type="checkbox" id="force-pvp" class="w-5 h-5 accent-orange-500 rounded cursor-pointer">
                 </div>
-
-                <!-- Security Zone Toggle -->
                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-800">
                     <div>
                         <label class="block text-sm font-semibold text-white">Enable Security Zones</label>
@@ -49,8 +44,6 @@
                     </div>
                     <input type="checkbox" id="security-zones" class="w-5 h-5 accent-orange-500 rounded cursor-pointer">
                 </div>
-
-                <!-- Coriolis Storm Toggle -->
                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-800">
                     <div>
                         <label class="block text-sm font-semibold text-white">Coriolis Auto-Spawn Storms</label>
@@ -58,7 +51,6 @@
                     </div>
                     <input type="checkbox" id="coriolis-storm" class="w-5 h-5 accent-orange-500 rounded cursor-pointer">
                 </div>
-
                 <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 px-4 rounded text-xs uppercase tracking-wider transition-colors shadow">
                     Apply Global Subsystem Toggles (.ini)
                 </button>
@@ -68,28 +60,28 @@
         <!-- CARD 2: REAL-TIME POD MONITOR -->
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
             <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">📦 Kubernetes Cluster Zones</h2>
-            <!-- This container starts empty and gets dynamically populated by real K3s data -->
             <div id="pod-zones-container" class="space-y-3">
-                <div class="text-sm text-gray-500 italic text-center py-4">Querying cluster states...</div>
+                <div class="text-sm text-gray-500 italic text-center py-4">Querying system metrics...</div>
             </div>
         </section>
 
-        <!-- CARD 3: GAME MONITOR (A2S INBOUND METRICS) -->
-        <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
-            <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">📡 Active Game Session Data</h2>
-            <div class="grid grid-cols-3 gap-4 text-center">
-                <div class="bg-gray-900 p-4 rounded border border-gray-800">
-                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Active Players</div>
-                    <div id="metric-players" class="text-2xl font-bold text-white">-- / --</div>
+        <!-- CARD 3: GAME MONITOR -->
+        <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-4 text-orange-300">📡 Active Game Session Data</h2>
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div class="bg-gray-900 p-4 rounded border border-gray-800">
+                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Total Cluster Players</div>
+                        <div id="metric-players" class="text-3xl font-bold text-white">-- / --</div>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded border border-gray-800">
+                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Local API Gateway</div>
+                        <div class="text-3xl font-bold text-green-400">Online</div>
+                    </div>
                 </div>
-                <div class="bg-gray-900 p-4 rounded border border-gray-800">
-                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Query Port Ping</div>
-                    <div id="metric-ping" class="text-2xl font-bold text-green-400">--</div>
-                </div>
-                <div class="bg-gray-900 p-4 rounded border border-gray-800">
-                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">DB Connections</div>
-                    <div id="metric-db" class="text-2xl font-bold text-white">4</div>
-                </div>
+            </div>
+            <div class="bg-gray-900 p-3 rounded border border-gray-800 mt-4 text-center text-xs text-gray-400 font-mono">
+                System tracking updates automatically via native CLI instrumentation loops.
             </div>
         </section>
 
@@ -97,14 +89,10 @@
         <section class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md flex flex-col justify-between">
             <div>
                 <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-2 text-orange-300">🛠️ System Control Panel</h2>
-                
-                <!-- ⚠️ LIABILITY DISCLAIMER BANNER -->
                 <div class="bg-red-950/40 border border-red-800 text-red-300 p-3 rounded text-xs mb-4 leading-relaxed">
                     <strong>⚠️ LIABILITY & RISK NOTICE:</strong> This manager tool is in active development. Use with extreme caution. The authors are not held responsible for data loss, server configuration corruption, or unexpected cluster crashes. This interface triggers the official background server files and deployment scripts provided natively by <strong>Funcom</strong>.
                 </div>
             </div>
-            
-            <!-- CONTROLS CONTAINER -->
             <div class="space-y-3">
                 <div class="grid grid-cols-3 gap-2">
                     <button id="btn-start" class="bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700 py-2 px-3 rounded transition-all text-xs font-bold uppercase tracking-wider">
@@ -117,8 +105,6 @@
                         🔄 Cycle/Restart
                     </button>
                 </div>
-                
-                <!-- PROGRESSIVE SEQUENTIAL UPDATE BUTTON -->
                 <button id="btn-update" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 px-4 rounded text-xs uppercase tracking-widest transition-colors shadow-md">
                     🚀 Run Safe Server File Update
                 </button>
@@ -131,16 +117,13 @@
         OpenDune-Director • Fully Open Source Under GNU AGPLv3 License Protection
     </footer>
 
-    <!-- FRONTEND PLUMBING: CONNECTING TO FASTAPI BACKEND -->
     <script>
-        const API_BASE = ""; // Relative paths since frontend is hosted on the same port
+        const API_BASE = "";
 
-        // 1. FETCH AND DISPLAY CURRENT .INI GAMEPLAY SUBSYSTEMS
         async function loadConfig() {
             try {
                 const response = await fetch(`${API_BASE}/api/config`);
                 if (!response.ok) throw new Error("Failed to read server configuration");
-                
                 const result = await response.json();
                 if (result.success) {
                     document.getElementById('force-pvp').checked = result.data.force_pvp;
@@ -152,23 +135,19 @@
             }
         }
 
-        // 2. SAVE CONFIGURATION TOGGLES BACK TO .INI FILE
         document.getElementById('config-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const payload = {
                 force_pvp: document.getElementById('force-pvp').checked,
                 security_zones: document.getElementById('security-zones').checked,
                 coriolis_storm: document.getElementById('coriolis-storm').checked
             };
-
             try {
                 const response = await fetch(`${API_BASE}/api/config`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
                 const result = await response.json();
                 if (response.ok && result.success) {
                     alert("🏜️ Battlegroup gameplay rules written successfully to UserGame.ini!");
@@ -180,40 +159,38 @@
             }
         });
 
-        // 3. FETCH AND DISPLAY REAL-TIME KUBERNETES POD STATUSES (DYNAMICALLY PARSED)
-        async function updateClusterStatus() {
+        // UNIFIED LOOP: UPDATES CLUSTER NODES AND PLAYER POPULATION DYNAMICALLY
+        async function runUnifiedDashboardSync() {
             try {
                 const response = await fetch(`${API_BASE}/api/status`);
                 const statusIndicator = document.getElementById('cluster-status');
                 const container = document.getElementById('pod-zones-container');
+                const playersIndicator = document.getElementById('metric-players');
                 
                 if (!response.ok) {
-                    statusIndicator.innerText = "Cluster Error (API Offline)";
+                    statusIndicator.innerText = "System Offline (CLI Error)";
                     statusIndicator.className = "text-sm font-medium text-red-400";
                     return;
                 }
 
                 const result = await response.json();
                 if (result.success) {
-                    statusIndicator.innerText = "Cluster Online (K3s)";
+                    statusIndicator.innerText = result.cluster_healthy;
                     statusIndicator.className = "text-sm font-medium text-gray-300";
+                    playersIndicator.innerText = result.total_players;
                     
-                    // Reset internal box layouts completely
                     container.innerHTML = "";
-                    
                     const zones = result.zones;
-                    const podKeys = Object.keys(zones);
+                    const mapKeys = Object.keys(zones);
                     
-                    if (podKeys.length === 0) {
+                    if (mapKeys.length === 0) {
                         container.innerHTML = `<div class="text-sm text-gray-400 italic text-center py-4">No active game server pods detected in this namespace.</div>`;
                         return;
                     }
 
-                    // Loop through active pods returned natively by python logic
-                    podKeys.forEach(podName => {
-                        const podData = zones[podName];
-                        const isRunning = podData.status === "Running";
-                        
+                    mapKeys.forEach(mapKey => {
+                        const zoneData = zones[mapKey];
+                        const isRunning = zoneData.status === "Running";
                         const badgeClass = isRunning 
                             ? "bg-green-900/50 text-green-400 border-green-700" 
                             : "bg-yellow-900/50 text-yellow-400 border-yellow-700";
@@ -221,46 +198,40 @@
                         const rowHtml = `
                             <div class="flex justify-between items-center bg-gray-900 p-3 rounded border border-gray-800">
                                 <div>
-                                    <div class="font-medium">${podData.display_name}</div>
-                                    <div class="text-xs text-gray-500 font-mono">${podName}</div>
+                                    <div class="font-medium">${zoneData.display_name}</div>
+                                    <div class="text-xs text-gray-500 font-mono">${mapKey}</div>
                                 </div>
-                                <span class="${badgeClass} border text-xs px-2.5 py-0.5 rounded-full font-semibold">${podData.status}</span>
+                                <span class="${badgeClass} border text-xs px-2.5 py-0.5 rounded-full font-semibold">${zoneData.status}</span>
                             </div>
                         `;
                         container.insertAdjacentHTML('beforeend', rowHtml);
                     });
                 }
             } catch (error) {
-                console.error("Cluster Status Sync Error:", error);
+                console.error("Dashboard Sync Error:", error);
             }
         }
 
-        // 4. COMMAND RUNNER FOR CORE INFRASTRUCTURE BUTTONS
         async function sendClusterCommand(action, zoneType) {
             try {
                 const response = await fetch(`${API_BASE}/api/zone/${zoneType}/${action}`, { method: 'POST' });
                 const result = await response.json();
                 if (response.ok && result.success) {
-                    alert(`✅ Command [${action.toUpperCase()}] executed successfully on target cluster zone.`);
+                    alert(`✅ Command [${action.toUpperCase()}] dispatched to the battlegroup layer successfully.`);
                 } else {
-                    alert(`❌ Command Error: ${result.detail || "Action rejected by cluster master node."}`);
+                    alert(`❌ Command Error: ${result.detail || "Action rejected by cluster supervisor."}`);
                 }
             } catch (error) {
                 alert(`❌ Connection Failure: ${error.message}`);
             }
         }
 
-        // 5. SEQUENTIAL ACTION ROUTER WITH STRICT BACKUP SAFETY PROMPT
         async function triggerSafeUpdateSequence(zoneType) {
-            // Step 1: Prompt user for confirmation of server backup status
             const currentBackupVerified = confirm("❓ SAFETY CHECK:\nHave you taken a manual snapshot or backup of your server data before initiating this file update?");
-            
             if (!currentBackupVerified) {
                 alert("🛑 UPDATE ABORTED:\nPlease run the update routine again after your backup has been completed successfully.");
                 return;
             }
-
-            // Step 2: Confirm intent to bring down the environment
             if (!confirm("⚠️ Proceeding with Server Update:\nThis will safely STOP your active map pods, execute the official Funcom game files update routine, and RESTART your cluster. Players will be disconnected. Proceed?")) return;
 
             const updateBtn = document.getElementById('btn-update');
@@ -283,23 +254,18 @@
             }
         }
 
-        // BIND EVENT LISTENERS TO INTERFACE BUTTONS
         document.getElementById('btn-start').addEventListener('click', () => sendClusterCommand('start', 'hb1'));
         document.getElementById('btn-stop').addEventListener('click', () => sendClusterCommand('stop', 'hb1'));
         document.getElementById('btn-restart').addEventListener('click', () => {
-            if(confirm("Perform a rolling restart on active game pods?")) sendClusterCommand('restart', 'hb1');
+            if(confirm("Perform a cluster rolling restart on active game segments?")) sendClusterCommand('restart', 'hb1');
         });
         document.getElementById('btn-update').addEventListener('click', () => triggerSafeUpdateSequence('hb1'));
 
-        // INITIALIZATION EVENTS ON RUNTIME
         window.addEventListener('DOMContentLoaded', () => {
-            loadConfig(); // Get .ini data immediately on page execution
-            updateClusterStatus();
-            
-            // Poll the Kubernetes cluster loop every 5 seconds to track pod stability
-            setInterval(updateClusterStatus, 5000);
+            loadConfig();
+            runUnifiedDashboardSync();
+            setInterval(runUnifiedDashboardSync, 5000);
         });
     </script>
-
 </body>
 </html>
