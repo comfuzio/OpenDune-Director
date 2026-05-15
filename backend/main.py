@@ -43,15 +43,18 @@ async def save_config_endpoint(payload: ConfigUpdate):
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
-@app.get("/api/status")
-async def get_cluster_status_endpoint():
-    return k8s_monitor.get_cluster_and_metrics()
-
-@app.post("/api/zone/{action}")
-async def global_cluster_action(action: str, map_target: str = None):
+@app.post("/api/zone/persistence/{action}/{map_target}")
+async def toggle_zone_persistence_endpoint(action: str, map_target: str):
+    """
+    Directly routes MinServers overrides to the underlying cluster config data matrix.
+    Action values must pass strictly as either 'make-persistent' or 'make-dynamic'.
+    """
+    if action not in ["make-persistent", "make-dynamic"]:
+        raise HTTPException(status_code=400, detail="Invalid persistence directive modification string.")
+        
     result = k8s_monitor.execute_battlegroup_action(action, map_target)
-    if isinstance(result, dict) and not result["success"]:
-        raise HTTPException(status_code=500, detail=result["error"])
+    if isinstance(result, dict) and not result.get("success", True):
+        raise HTTPException(status_code=500, detail=result.get("error", "Failed to alter scaling policy."))
     return result
 
 @app.post("/api/zone/{action}/{map_target}")
