@@ -16,8 +16,8 @@
         </div>
         <div class="flex items-center space-x-4 bg-gray-900/60 p-2 px-4 rounded-full border border-gray-700">
             <span class="flex h-3 w-3 relative">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                <span id="pulse-dot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                <span id="solid-dot" class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
             </span>
             <span id="cluster-status" class="text-xs md:text-sm font-bold tracking-wide text-gray-300">Syncing...</span>
         </div>
@@ -173,6 +173,8 @@
             try {
                 const response = await fetch(`${API_BASE}/api/status`);
                 const statusIndicator = document.getElementById('cluster-status');
+                const pulseDot = document.getElementById('pulse-dot');
+                const solidDot = document.getElementById('solid-dot');
                 const container = document.getElementById('pod-zones-container');
                 const playersIndicator = document.getElementById('metric-players');
                 const breakdownList = document.getElementById('location-breakdown-list');
@@ -180,15 +182,31 @@
                 if (!response.ok) {
                     statusIndicator.innerText = "System Offline (CLI Error)";
                     statusIndicator.className = "text-sm font-medium text-red-400";
+                    pulseDot.className = "absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-0";
+                    solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
                     return;
                 }
 
                 const result = await response.json();
                 if (result.success) {
                     statusIndicator.innerText = result.cluster_healthy;
-                    statusIndicator.className = "text-sm font-medium text-gray-300";
                     
-                    // Dynamically map our accurately tracked cluster max capacity variable
+                    // DYNAMIC VISUAL HANDSHAKE MATRICES
+                    if (result.cluster_healthy === "Cluster Running") {
+                        statusIndicator.className = "text-xs md:text-sm font-bold tracking-wide text-green-400";
+                        pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
+                        solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+                    } else if (result.cluster_healthy === "Cluster Stopping") {
+                        statusIndicator.className = "text-xs md:text-sm font-bold tracking-wide text-yellow-400";
+                        pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75";
+                        solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-yellow-500";
+                    } else {
+                        // Cluster Stopped, Suspended, or Offline
+                        statusIndicator.className = "text-xs md:text-sm font-bold tracking-wide text-red-400";
+                        pulseDot.className = "absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-0";
+                        solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
+                    }
+                    
                     playersIndicator.innerText = `${result.total_players} / ${result.max_capacity}`;
                     
                     container.innerHTML = "";
