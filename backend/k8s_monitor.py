@@ -1,5 +1,67 @@
 import subprocess
 import json
+import time
+
+def set_zone_scale(zone_type, scale_count):
+    """
+    Scales a specific deployment to a target number of pods (0 to stop, 1 to start).
+    """
+    deployment_map = {
+        "hb1": "seabass-server-bg-hb1",
+        "hb2": "seabass-server-bg-hb2",
+        "deepdesert": "seabass-server-bg-deepdesert"
+    }
+    
+    target_deployment = deployment_map.get(zone_type)
+    if not target_deployment:
+        return {"success": False, "error": "Invalid zone type specified."}
+        
+    try:
+        subprocess.run(
+            ["sudo", "kubectl", "scale", f"deployment/{target_deployment}", f"--replicas={scale_count}", "-n", "default"],
+            check=True, capture_output=True, text=True
+        )
+        action = "Started" if scale_count > 0 else "Stopped"
+        return {"success": True, "message": f"Zone {zone_type} successfully {action}."}
+    except subprocess.CalledProcessError as e:
+        return {"success": False, "error": f"Scale operation failed: {e.stderr}"}
+
+def run_sequential_update(zone_type):
+    """
+    Safely executes the update lifecycle:
+    1. Stop the zone (Scale to 0)
+    2. Execute Funcom's official script update command
+    3. Start the zone (Scale to 1)
+    """
+    try:
+        # Step 1: Stop the cluster pod safely
+        stop_res = set_zone_scale(zone_type, 0)
+        if not stop_res["success"]:
+            return stop_res
+            
+        # Small grace period for pods to terminate
+        time.sleep(3)
+        
+        # Step 2: Run the official Funcom update routine script
+        # Adjust the path to wherever your official launcher script lives
+        update_script_path = "/home/dune/.dune/download/scripts/setup/battlegroup"
+        
+        result = subprocess.run(
+            ["sudo", update_script_path, "update"],
+            check=True, capture_output=True, text=True
+        )
+        
+        # Step 3: Start the cluster pod back up
+        start_res = set_zone_scale(zone_type, 1)
+        if not start_res["success"]:
+            return start_res
+            
+        return {"success": True, "message": "Cluster safely stopped, Funcom scripts updated game files, and pods re-initialized successfully."}
+        
+    except subprocess.CalledProcessError as e:
+        return {"success": False, "error": f"Official update script execution failed: {e.stderr}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 def get_zone_status():
     """
