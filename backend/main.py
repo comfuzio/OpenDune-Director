@@ -12,9 +12,9 @@ app = FastAPI(title="OpenDune-Director API")
 
 # Define a Pydantic data model to safely validate incoming config updates
 class ConfigUpdate(BaseModel):
-    world_name: str
-    password: str
-    max_players: int
+    force_pvp: bool
+    security_zones: bool
+    coriolis_storm: bool
 
 # -------------------------------------------------------------------------
 # 1. API ENDPOINTS (The plumbing between frontend and backend)
