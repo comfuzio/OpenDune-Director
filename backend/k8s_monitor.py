@@ -4,10 +4,6 @@ import re
 BATTLEGROUP_BIN = "/home/dune/.dune/bin/battlegroup"
 
 def get_cluster_and_metrics():
-    """
-    Executes the official Funcom battlegroup binary, dynamically grabs the true
-    global state (Healthy, Stopped, etc.), and collects player limits.
-    """
     try:
         result = subprocess.run(
             [BATTLEGROUP_BIN, "status"],
@@ -28,35 +24,22 @@ def get_cluster_and_metrics():
     total_players = 0
     max_capacity = 40  
     parsing_servers = False
-    
-    # Default fallback state
     cluster_healthy = "Unknown State"
 
-    # Step 1: Scan explicitly for the Global Battlegroup Status Row
     for idx, line in enumerate(lines):
-        line = line.strip()
-        if "----------" in line and idx > 0:
-            # The actual data values sit directly underneath the dashed line column headers
-            data_row = lines[idx + 1].strip()
-            row_parts = re.split(r'\s+', data_row)
-            if row_parts:
-                global_status = row_parts[0] # Grabs 'Healthy', 'Stopped', or 'Stopping'
-                if global_status == "Healthy":
-                    cluster_healthy = "Cluster Running"
-                elif global_status == "Stopped":
-                    cluster_healthy = "Cluster Stopped"
-                elif global_status == "Stopping":
-                    cluster_healthy = "Cluster Stopping"
-                else:
-                    cluster_healthy = f"Cluster: {global_status}"
-            break
-
-    # Step 2: Parse individual map instance states
-    for line in lines:
         line = line.strip()
         if not line:
             continue
 
+        # 1. Capture the Global State (Check first dashed divider boundary safely)
+        if "----------" in line and not parsing_servers and cluster_healthy == "Unknown State":
+            data_row = lines[idx + 1].strip()
+            row_parts = re.split(r'\s+', data_row)
+            if row_parts:
+                global_status = row_parts[0]  # Healthy, Stopped, or Stopping
+                cluster_healthy = f"Cluster {global_status}" if global_status in ["Stopped", "Stopping"] else "Cluster Running" if global_status == "Healthy" else f"Cluster: {global_status}"
+
+        # 2. Trigger individual game server mapping blocks
         if "Map" in line and "Phase" in line and "Players" in line:
             parsing_servers = True
             continue
@@ -77,15 +60,13 @@ def get_cluster_and_metrics():
                 except ValueError:
                     players_count = 0
 
-                display_name = map_name.replace("_", " Sector ")
-                
                 detected_zones[map_name] = {
-                    "display_name": display_name,
+                    "display_name": map_name.replace("_", " Sector "),
                     "status": phase,
                     "players": players_count  
                 }
 
-    # Step 3: Extract True Cap Space
+    # 3. Dynamic Live Cluster Cap Check Space
     try:
         cap_query = subprocess.run(
             ["sudo", "kubectl", "get", "battlegroups", "-o", "jsonpath={.items[*].spec.gameServers.maxPlayers}"],
@@ -108,12 +89,12 @@ def get_cluster_and_metrics():
 def execute_battlegroup_action(action, map_name=None):
     try:
         if action == "update":
-            cmd = ["sudo", BATTLEGROUP_BIN, "update"]
-        elif map_name:
-            cmd = [BATTLEGROUP_BIN, action, map_name]
-        else:
-            cmd = [BATTLEGROUP_BIN, action]
-            
+            return subprocess.Popen(
+                ["sudo", BATTLEGROUP_BIN, "update"],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            )
+        
+        cmd = [BATTLEGROUP_BIN, action, map_name] if map_name else [BATTLEGROUP_BIN, action]
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         return {"success": True, "message": result.stdout}
     except subprocess.CalledProcessError as e:
