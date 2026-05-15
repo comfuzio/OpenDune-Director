@@ -8,13 +8,11 @@ import k8s_monitor
 
 app = FastAPI(title="OpenDune-Director Web Engine")
 
-# DATA SCHEMES FOR PAYLOAD VALIDATION
 class ConfigUpdate(BaseModel):
     force_pvp: bool
     security_zones: bool
     coriolis_storm: bool
 
-# 1. SERVE FRONTEND INTERFACE DASHBOARD
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
@@ -26,7 +24,6 @@ async def get_dashboard():
     with open(index_path, "r") as f:
         return f.read()
 
-# 2. CONFIGURATION HANDLERS (.INI READ / WRITE)
 @app.get("/api/config")
 async def get_config_endpoint():
     result = config_editor.read_server_config()
@@ -45,52 +42,42 @@ async def save_config_endpoint(payload: ConfigUpdate):
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
-# 3. CONSOLIDATED DYNAMIC TELEMETRY ROUTER (CLUSTERS & PLAYERS)
 @app.get("/api/status")
 async def get_cluster_status_endpoint():
     return k8s_monitor.get_cluster_and_metrics()
 
-# 4. ENVIRONMENT COMMAND CONTROL ENDPOINTS (DIRECT COMMAND ROUTING)
-@app.post("/api/zone/{zone_type}/start")
-async def start_zone(zone_type: str):
-    # Maps 'hb1' dashboard button target to your real 'Survival_1' sector
-    target_map = "Survival_1" if zone_type == "hb1" else zone_type
-    result = k8s_monitor.execute_battlegroup_action("start", target_map)
+# 🛠️ FLEXIBLE ROUTER FOR TARGETED OR GLOBAL CONTROL COMMANDS
+@app.post("/api/zone/{action}")
+async def global_cluster_action(action: str, map_target: str = None):
+    """Handles global commands directly (e.g., stopping/starting the entire environment)."""
+    result = k8s_monitor.execute_battlegroup_action(action, map_target)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
-@app.post("/api/zone/{zone_type}/stop")
-async def stop_zone(zone_type: str):
-    target_map = "Survival_1" if zone_type == "hb1" else zone_type
-    result = k8s_monitor.execute_battlegroup_action("stop", target_map)
+@app.post("/api/zone/{action}/{map_target}")
+async def targeted_instance_action(action: str, map_target: str):
+    """Handles instance-specific actions triggered right from the row buttons."""
+    result = k8s_monitor.execute_battlegroup_action(action, map_target)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
-@app.post("/api/zone/{zone_type}/restart")
-async def restart_zone(zone_type: str):
-    target_map = "Survival_1" if zone_type == "hb1" else zone_type
-    result = k8s_monitor.execute_battlegroup_action("restart", target_map)
-    if not result["success"]:
-        raise HTTPException(status_code=500, detail=result["error"])
-    return result
-
-@app.post("/api/zone/{zone_type}/safe-update")
-async def safe_update_zone(zone_type: str):
-    target_map = "Survival_1" if zone_type == "hb1" else zone_type
-    
-    # 1. Stop the target map safely
-    k8s_monitor.execute_battlegroup_action("stop", target_map)
-    
-    # 2. Run the update with sudo privileges
-    result = k8s_monitor.execute_battlegroup_action("update")
-    if not result["success"]:
-        raise HTTPException(status_code=500, detail=result["error"])
-        
-    # 3. Start the target map sector back up
-    k8s_monitor.execute_battlegroup_action("start", target_map)
-    return {"success": True, "message": "Cluster server file update completed successfully via root execution parameters."}
+@app.post("/api/safe-update")
+async def safe_update_cluster_endpoint():
+    """Triggers the safe programmatic stop -> update -> start macro loop globally."""
+    try:
+        # 1. Bring down the cluster
+        k8s_monitor.execute_battlegroup_action("stop")
+        # 2. Update server source files via root execution parameters
+        result = k8s_monitor.execute_battlegroup_action("update")
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=result["error"])
+        # 3. Bring the entire ecosystem back online
+        k8s_monitor.execute_battlegroup_action("start")
+        return {"success": True, "message": "Global cluster files updated and deployments re-initialized successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
