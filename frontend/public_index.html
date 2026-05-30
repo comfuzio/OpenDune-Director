@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenDune - Public Server Status</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans antialiased selection:bg-orange-500 selection:text-white pb-12">
+
+    <header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">🏜️</span>
+            <h1 class="text-xl md:text-2xl font-black tracking-widest text-orange-400 uppercase">Server Status</h1>
+        </div>
+        <div class="flex items-center space-x-4 bg-gray-900/60 p-2 px-4 rounded-full border border-gray-700">
+            <span class="flex h-3 w-3 relative">
+                <span id="pulse-dot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                <span id="solid-dot" class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
+            </span>
+            <span id="cluster-status" class="text-xs md:text-sm font-bold tracking-wide text-gray-300">Syncing...</span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+
+        <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
+            <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 tracking-wide uppercase">📦 Active Server Sectors</h2>
+            <div id="pod-zones-container" class="space-y-4">
+                <div class="text-sm text-gray-500 italic text-center py-8">Querying system metrics...</div>
+            </div>
+        </section>
+
+        <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl flex flex-col">
+            <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 tracking-wide uppercase">📡 Population Telemetry</h2>
+            <div class="grid grid-cols-1 gap-4 text-center mb-4">
+                <div class="bg-gray-900 p-6 rounded-lg border border-gray-800">
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Total Online Players</div>
+                    <div id="metric-players" class="text-4xl md:text-5xl font-black text-white tracking-tight">-- / --</div>
+                </div>
+            </div>
+            
+            <div class="mt-2 flex-grow">
+                <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">📍 Live Sector Distribution:</div>
+                <div id="location-breakdown-list" class="space-y-2 overflow-y-auto pr-1"></div>
+            </div>
+        </section>
+    </main>
+
+    <section class="max-w-7xl mx-auto px-4 md:px-8">
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 md:p-6 shadow-xl grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">💻 Server CPU Load</div>
+                <div id="sys-cpu" class="text-sm md:text-base font-black text-white">--%</div>
+            </div>
+            <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">🧠 Server RAM Usage</div>
+                <div id="sys-ram" class="text-xs md:text-sm font-bold text-gray-300">--</div>
+            </div>
+            <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">💽 Disk I/O Status</div>
+                <div id="sys-disk" class="text-[11px] font-medium text-orange-300 font-mono">--</div>
+            </div>
+            <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800/80">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">🌐 Network Stability</div>
+                <div id="sys-network" class="text-[11px] font-medium text-emerald-400 font-mono">--</div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center py-12 text-xs text-gray-600 tracking-widest uppercase font-semibold">
+        OpenDune-Director • Public Server Dashboard
+    </footer>
+
+    <script>
+        const API_BASE = "";
+
+        async function runUnifiedDashboardSync() {
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const statusIndicator = document.getElementById('cluster-status');
+                const pulseDot = document.getElementById('pulse-dot');
+                const solidDot = document.getElementById('solid-dot');
+                const container = document.getElementById('pod-zones-container');
+                const playersIndicator = document.getElementById('metric-players');
+                const breakdownList = document.getElementById('location-breakdown-list');
+                
+                if (!response.ok) {
+                    statusIndicator.innerText = "System Offline";
+                    statusIndicator.className = "text-sm font-medium text-red-400";
+                    pulseDot.className = "absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-0";
+                    solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
+                    return;
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    statusIndicator.innerText = "Server Online";
+                    statusIndicator.className = "text-xs md:text-sm font-bold tracking-wide text-green-400";
+                    pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
+                    solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+                    
+                    playersIndicator.innerText = `${result.total_players} / ${result.max_capacity}`;
+                    
+                    document.getElementById('sys-cpu').innerText = result.telemetry.cpu;
+                    document.getElementById('sys-ram').innerText = result.telemetry.ram;
+                    document.getElementById('sys-disk').innerText = result.telemetry.disk;
+                    document.getElementById('sys-network').innerText = result.telemetry.network;
+
+                    container.innerHTML = "";
+                    breakdownList.innerHTML = "";
+                    
+                    const zones = result.zones;
+                    const mapKeys = Object.keys(zones);
+                    let activeLocationCount = 0;
+                    
+                    if (mapKeys.length === 0) {
+                        container.innerHTML = `<div class="text-sm text-gray-400 italic text-center py-8">Server currently hibernating.</div>`;
+                    } else {
+                        mapKeys.forEach(mapKey => {
+                            const zoneData = zones[mapKey];
+                            const isRunning = zoneData.status === "Running";
+                            const badgeClass = isRunning 
+                                ? "bg-green-950/60 text-green-400 border-green-800/80" 
+                                : "bg-yellow-950/60 text-yellow-400 border-yellow-800/80";
+
+                            const rowHtml = `
+                                <div class="flex justify-between items-center bg-gray-900 p-4 rounded-lg border border-gray-800 shadow-inner">
+                                    <div>
+                                        <div class="font-bold text-sm md:text-base text-white">${zoneData.display_name}</div>
+                                        <div class="text-[11px] text-gray-500 font-mono mt-1 tracking-wider">${mapKey}</div>
+                                    </div>
+                                    <span class="${badgeClass} border text-[10px] px-2.5 py-1 rounded font-black uppercase tracking-widest">${zoneData.status}</span>
+                                </div>
+                            `;
+                            container.insertAdjacentHTML('beforeend', rowHtml);
+
+                            if (zoneData.players > 0) {
+                                activeLocationCount++;
+                                const breakdownHtml = `
+                                    <div class="flex justify-between items-center bg-gray-900/60 p-3 rounded border border-gray-800 text-sm font-semibold">
+                                        <span class="text-gray-300">📍 ${zoneData.display_name}</span>
+                                        <span class="text-orange-400 font-black font-mono">${zoneData.players} Online</span>
+                                    </div>
+                                `;
+                                breakdownList.insertAdjacentHTML('beforeend', breakdownHtml);
+                            }
+                        });
+                        if (activeLocationCount === 0) {
+                            breakdownList.innerHTML = `<div class="text-xs text-gray-500 italic py-1 tracking-wide">All maps currently empty.</div>`;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Dashboard Sync Error:", error);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            runUnifiedDashboardSync();
+            setInterval(runUnifiedDashboardSync, 10000); // Check every 10 seconds
+        });
+    </script>
+</body>
+</html>
