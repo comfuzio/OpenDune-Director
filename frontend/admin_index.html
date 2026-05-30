@@ -6,125 +6,65 @@
     <title>OpenDune - Admin Director</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Map CSS Ported from Easy-Dune-Admin */
-        .map-frame {
-            position: relative;
-            width: 100%;
-            height: 70vh;
-            min-height: 500px;
-            overflow: auto;
-            background: #020202;
-            border: 1px solid #333;
-            cursor: grab;
-            overscroll-behavior: contain;
-            border-radius: 0.5rem;
-        }
+        .map-frame { position: relative; width: 100%; height: 70vh; min-height: 500px; overflow: auto; background: #020202; border: 1px solid #333; cursor: grab; overscroll-behavior: contain; border-radius: 0.5rem; }
         .map-frame.dragging { cursor: grabbing; user-select: none; }
         .map-canvas { position: relative; transform-origin: top left; }
         .map-image { position: absolute; left: 0; top: 0; user-select: none; pointer-events: none; }
         .marker-layer { position: absolute; left: 0; top: 0; }
-        .map-marker {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: 2px solid #000;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            z-index: 5;
-            transition: all 0.2s ease;
-        }
+        .map-marker { position: absolute; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #000; transform: translate(-50%, -50%); cursor: pointer; z-index: 5; transition: all 0.2s ease; }
         .map-marker.player { background: #4aa3ff; box-shadow: 0 0 12px #4aa3ff; }
         .map-marker.vehicle { background: #71d36b; box-shadow: 0 0 12px #71d36b; }
         .map-marker.base { background: #d6a444; box-shadow: 0 0 12px #d6a444; }
         .map-marker:hover { width: 16px; height: 16px; z-index: 10; }
-        .marker-tip {
-            display: none;
-            position: absolute;
-            left: 20px;
-            top: -10px;
-            min-width: 220px;
-            background: #111;
-            border: 1px solid #ff8c00;
-            color: #ddd;
-            padding: 8px;
-            font-size: 12px;
-            white-space: nowrap;
-            border-radius: 4px;
-            pointer-events: none;
-        }
+        .marker-tip { display: none; position: absolute; left: 20px; top: -10px; min-width: 220px; background: #111; border: 1px solid #ff8c00; color: #ddd; padding: 8px; font-size: 12px; white-space: nowrap; border-radius: 4px; pointer-events: none; }
         .map-marker:hover .marker-tip { display: block; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen font-sans antialiased selection:bg-orange-500 selection:text-white pb-12">
 
-    <!-- Top Navigation Bar -->
     <header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-lg sticky top-0 z-50">
         <div class="flex items-center space-x-3">
             <span class="text-3xl">🏜️</span>
             <h1 class="text-xl md:text-2xl font-black tracking-widest text-orange-400 uppercase">OpenDune-Director (Admin)</h1>
         </div>
         
-        <!-- Tab Navigation -->
         <div class="hidden md:flex space-x-2 bg-gray-900 rounded-lg p-1 border border-gray-700">
             <button onclick="switchTab('tab-dashboard')" class="tab-btn px-4 py-2 rounded text-sm font-bold bg-gray-700 text-white transition-colors">Server Dashboard</button>
             <button onclick="switchTab('tab-map')" class="tab-btn px-4 py-2 rounded text-sm font-bold text-gray-400 hover:text-white transition-colors">Live Map & Teleport</button>
+            <button onclick="switchTab('tab-tools')" class="tab-btn px-4 py-2 rounded text-sm font-bold text-gray-400 hover:text-white transition-colors">Database & Mod Tools</button>
         </div>
 
         <div class="flex items-center space-x-4 bg-gray-900/60 p-2 px-4 rounded-full border border-gray-700">
-            <span class="flex h-3 w-3 relative">
-                <span id="pulse-dot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-                <span id="solid-dot" class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
-            </span>
+            <span class="flex h-3 w-3 relative"><span id="pulse-dot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span><span id="solid-dot" class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span></span>
             <span id="cluster-status" class="text-xs md:text-sm font-bold tracking-wide text-gray-300">Syncing...</span>
         </div>
     </header>
 
-    <!-- ========================================================================= -->
-    <!-- TAB 1: SERVER DASHBOARD (Your Original UI) -->
-    <!-- ========================================================================= -->
     <main id="tab-dashboard" class="tab-content max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-        
-        <!-- Gameplay Controls -->
         <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
             <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 uppercase">⚙️ Gameplay Mechanics</h2>
             <form id="config-form" class="space-y-4">
                 <div class="flex items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800">
-                    <div>
-                        <label class="block text-sm font-bold text-white">Force PvP Globally</label>
-                        <span class="text-xs text-gray-400">Overrides partition safety rules across all maps.</span>
-                    </div>
+                    <div><label class="block text-sm font-bold text-white">Force PvP Globally</label><span class="text-xs text-gray-400">Overrides partition safety rules across all maps.</span></div>
                     <input type="checkbox" id="force-pvp" class="w-6 h-6 accent-orange-500 rounded cursor-pointer">
                 </div>
                 <div class="flex items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800">
-                    <div>
-                        <label class="block text-sm font-bold text-white">Enable Security Zones</label>
-                        <span class="text-xs text-gray-400">Enforces safe trade hubs where combat is prohibited.</span>
-                    </div>
+                    <div><label class="block text-sm font-bold text-white">Enable Security Zones</label><span class="text-xs text-gray-400">Enforces safe trade hubs where combat is prohibited.</span></div>
                     <input type="checkbox" id="security-zones" class="w-6 h-6 accent-orange-500 rounded cursor-pointer">
                 </div>
                 <div class="flex items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800">
-                    <div>
-                        <label class="block text-sm font-bold text-white">Coriolis Auto-Spawn Storms</label>
-                        <span class="text-xs text-gray-400">Allows sandstorms to dynamically wipe builds.</span>
-                    </div>
+                    <div><label class="block text-sm font-bold text-white">Coriolis Auto-Spawn Storms</label><span class="text-xs text-gray-400">Allows sandstorms to dynamically wipe builds.</span></div>
                     <input type="checkbox" id="coriolis-storm" class="w-6 h-6 accent-orange-500 rounded cursor-pointer">
                 </div>
-                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 px-4 rounded-lg text-sm uppercase transition-all shadow-lg">
-                    Apply Global Subsystem Toggles (.ini)
-                </button>
+                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 px-4 rounded-lg text-sm uppercase transition-all shadow-lg">Apply Global Subsystem Toggles (.ini)</button>
             </form>
         </section>
 
-        <!-- Active Sectors -->
         <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
             <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 uppercase">📦 Active Sector Clusters</h2>
-            <div id="pod-zones-container" class="space-y-4">
-                <div class="text-sm text-gray-500 italic text-center py-8">Querying system metrics...</div>
-            </div>
+            <div id="pod-zones-container" class="space-y-4"><div class="text-sm text-gray-500 italic text-center py-8">Querying system metrics...</div></div>
         </section>
 
-        <!-- Population & Telemetry -->
         <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl flex flex-col justify-between">
             <div>
                 <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 uppercase">📡 Population Telemetry</h2>
@@ -143,20 +83,15 @@
                     </div>
                 </div>
             </div>
-            
             <div class="mt-4 pt-2 border-t border-gray-700/60 flex justify-between items-center text-[10px] text-gray-500 tracking-wide uppercase font-bold">
                 <div id="location-breakdown-list" class="w-full space-y-2 max-h-24 overflow-y-auto mb-4 pr-1"></div>
             </div>
         </section>
 
-        <!-- Core Controls & Stream -->
         <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl flex flex-col justify-between">
             <div>
                 <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-2 text-orange-300 uppercase">🛠️ Core Control Panel</h2>
-                
-                <div id="console-wrapper" class="hidden mb-4">
-                    <pre id="terminal-console" class="bg-black text-green-400 p-4 rounded-lg border border-gray-800 font-mono text-[11px] leading-relaxed overflow-y-auto h-44 shadow-inner whitespace-pre-wrap">Initializing log listener stream...</pre>
-                </div>
+                <div id="console-wrapper" class="hidden mb-4"><pre id="terminal-console" class="bg-black text-green-400 p-4 rounded-lg border border-gray-800 font-mono text-[11px] leading-relaxed overflow-y-auto h-44 shadow-inner whitespace-pre-wrap">Ready...</pre></div>
             </div>
             <div class="space-y-3.5">
                 <div class="grid grid-cols-3 gap-3">
@@ -164,87 +99,50 @@
                     <button id="global-btn-stop" class="bg-red-900/40 text-red-300 border border-red-700 font-extrabold py-3 px-2 rounded-lg text-xs uppercase">■ Cluster Stop</button>
                     <button id="global-btn-restart" class="bg-gray-900 text-gray-200 border border-gray-700 font-extrabold py-3 px-2 rounded-lg text-xs uppercase">🔄 Cluster Cycle</button>
                 </div>
-                <button id="global-btn-update" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 px-4 rounded-lg text-sm uppercase transition-all shadow-md">
-                    🚀 Run Safe Server File Update
-                </button>
+                <button id="global-btn-update" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 px-4 rounded-lg text-sm uppercase transition-all shadow-md">🚀 Run Safe Server File Update</button>
             </div>
         </section>
     </main>
 
-    <!-- ========================================================================= -->
-    <!-- TAB 2: LIVE MAP & OFFLINE TELEPORTATION (Ported Features) -->
-    <!-- ========================================================================= -->
     <main id="tab-map" class="tab-content max-w-[1600px] mx-auto p-4 md:p-8 hidden">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
-            <!-- Map Controls / Teleport Form -->
             <div class="lg:col-span-1 bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-xl flex flex-col gap-6">
-                
-                <!-- Map Selector -->
                 <div>
                     <h2 class="text-lg font-black text-orange-300 uppercase border-b border-gray-700 pb-2 mb-4">Map Controls</h2>
                     <select id="map-selector" class="w-full bg-gray-900 border border-gray-700 text-white rounded p-2 mb-4">
                         <option value="HaggaBasin">Arrakis - Hagga Basin</option>
                         <option value="DeepDesert">The Deep Desert</option>
                     </select>
-                    
                     <div class="flex items-center space-x-2 text-sm text-gray-400">
-                        <label>Zoom Level:</label>
+                        <label>Zoom:</label>
                         <input id="mapZoom" type="range" min="5" max="100" value="14" class="w-full accent-orange-500">
                         <span id="zoomReadout">14%</span>
                     </div>
                 </div>
 
-                <!-- Live Summary -->
-                <div class="bg-gray-900 p-4 rounded-lg border border-gray-800 text-sm font-mono text-gray-300" id="mapSummary">
-                    Loading markers...
-                </div>
+                <div class="bg-gray-900 p-4 rounded-lg border border-gray-800 text-sm font-mono text-gray-300" id="mapSummary">Loading markers...</div>
 
-                <!-- Admin Teleport Form -->
                 <div>
-                    <h2 class="text-lg font-black text-emerald-400 uppercase border-b border-gray-700 pb-2 mb-4">Admin Teleportation</h2>
-                    <p class="text-xs text-gray-400 mb-4">Click a player dot on the map to auto-fill these coordinates, or enter manually.</p>
-                    
+                    <h2 class="text-lg font-black text-emerald-400 uppercase border-b border-gray-700 pb-2 mb-4">Player Relocation</h2>
+                    <p class="text-xs text-gray-400 mb-4">Select a player marker to capture coordinates instantly.</p>
                     <form id="teleportForm" class="space-y-3">
                         <input type="hidden" id="teleportMapKey" value="HaggaBasin">
-                        
-                        <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Target FLS ID</label>
-                            <input type="text" id="teleportFlsId" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" placeholder="Player FLS ID">
-                        </div>
-                        
-                        <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Partition ID</label>
-                            <input type="text" id="teleportPartitionId" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" placeholder="1 or 8">
-                        </div>
-
+                        <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Player FLS ID</label><input type="text" id="teleportFlsId" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" placeholder="EA_AccountID..."></div>
+                        <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Partition ID</label><input type="text" id="teleportPartitionId" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white"></div>
                         <div class="grid grid-cols-3 gap-2">
-                            <div>
-                                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">X</label>
-                                <input type="text" id="teleportX" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white">
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Y</label>
-                                <input type="text" id="teleportY" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white">
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Z</label>
-                                <input type="text" id="teleportZ" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" value="1000">
-                            </div>
+                            <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">X</label><input type="text" id="teleportX" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white"></div>
+                            <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Y</label><input type="text" id="teleportY" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white"></div>
+                            <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Z</label><input type="text" id="teleportZ" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" value="1000"></div>
                         </div>
-
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 rounded uppercase mt-2 transition-colors">
-                            Move Offline Player
-                        </button>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 rounded uppercase mt-2 transition-colors">Teleport Offline Character</button>
                     </form>
                 </div>
             </div>
 
-            <!-- The Interactive Map Canvas -->
             <div class="lg:col-span-3 bg-gray-800 p-2 rounded-xl border border-gray-700 shadow-xl">
                 <div class="map-frame" id="mapFrame">
                     <div class="map-canvas" id="mapCanvas">
-                        <img class="map-image" id="mapImage" src="/static/arrakis_hb.webp" alt="Map Base">
+                        <img class="map-image" id="mapImage" src="/static/arrakis_hb.webp" alt="Map Grid">
                         <div class="marker-layer" id="markerLayer"></div>
                     </div>
                 </div>
@@ -252,80 +150,138 @@
         </div>
     </main>
 
-    <!-- FOOTER -->
+    <main id="tab-tools" class="tab-content max-w-7xl mx-auto p-4 md:p-8 hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
+            <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-4 text-orange-300 uppercase">🎁 Item Grant System</h2>
+            <p class="text-xs text-gray-400 mb-6">Inject items directly to an offline player's backpack. Uses JSONB injection to safely stack large quantities into a single inventory slot.</p>
+            
+            <form id="itemGrantForm" class="space-y-4 bg-gray-900/40 p-5 rounded-lg border border-gray-800">
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Target FLS ID</label>
+                    <input type="text" name="fls_id" required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono" placeholder="Target Account ID">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Item Blueprint / Template ID</label>
+                    <input type="text" name="template_id" required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono" placeholder="e.g. dune.item.spice">
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Quantity</label>
+                        <input type="number" name="quantity" required value="1" min="1" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Durability</label>
+                        <input type="number" step="0.1" name="durability" required value="1.0" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-emerald-400 uppercase block mb-1">Grade Level</label>
+                        <select name="grade" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono font-bold">
+                            <option value="0">0 (Base)</option>
+                            <option value="1">1 (Uncommon)</option>
+                            <option value="2">2 (Rare)</option>
+                            <option value="3">3 (Epic)</option>
+                            <option value="4">4 (Legendary)</option>
+                            <option value="5">5 (Mythic)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2.5 rounded uppercase text-xs tracking-wide transition-colors mt-2">
+                    Inject Items to Database
+                </button>
+            </form>
+            
+            <form id="thopterGrantForm" class="mt-4 bg-gray-900/40 p-5 rounded-lg border border-gray-800">
+                <h3 class="text-sm font-bold text-gray-300 uppercase mb-2">🚀 Grant MK6 Medium Thopter Kit</h3>
+                <div class="flex space-x-2">
+                    <input type="text" id="thopterFlsId" required class="flex-grow bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono" placeholder="Target FLS ID">
+                    <button type="submit" class="bg-orange-600 hover:bg-orange-500 text-white font-black px-4 rounded uppercase text-xs tracking-wide transition-colors">Grant Bundle</button>
+                </div>
+            </form>
+        </section>
+
+        <div class="space-y-6">
+            <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
+                <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-4 text-orange-300 uppercase">🛸 Vehicle Relocation</h2>
+                <div class="flex space-x-2 mb-4">
+                    <button type="button" onclick="loadAdminVehicles()" class="bg-gray-900 hover:bg-gray-950 border border-gray-700 text-xs font-bold text-orange-400 p-2 px-4 rounded transition-colors">🔄 Scan Vehicles</button>
+                    <select id="vehicle-selector" class="flex-grow bg-gray-900 border border-gray-700 text-sm text-white rounded p-2 font-mono"><option value="">No vehicles indexed...</option></select>
+                </div>
+                <form id="vehicleTeleportForm" class="grid grid-cols-2 gap-4 bg-gray-900/40 p-4 rounded-lg border border-gray-800">
+                    <input type="hidden" id="vehActorId" name="actor_id">
+                    <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Target Map Part</label><select id="vehMapKey" name="map_key" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white"><option value="HaggaBasin">HaggaBasin</option><option value="DeepDesert">DeepDesert</option></select></div>
+                    <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Partition ID</label><input type="number" id="vehPartitionId" name="partition_id" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" placeholder="1"></div>
+                    <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">X</label><input type="text" id="vehX" name="x" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono"></div>
+                    <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Y</label><input type="text" id="vehY" name="y" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono"></div>
+                    <div class="col-span-2"><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Altitude (Z)</label><input type="text" id="vehZ" name="z" value="1500" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono"></div>
+                    <button type="submit" class="col-span-2 bg-orange-600 hover:bg-orange-500 text-white font-black py-2 rounded uppercase text-xs transition-colors mt-2">Re-align Vehicle Vector</button>
+                </form>
+            </section>
+
+            <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
+                <div class="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+                    <h2 class="text-lg font-extrabold text-orange-300 uppercase">⚡ Over-repair</h2>
+                    <button id="triggerBackupBtn" class="bg-blue-900/60 hover:bg-blue-800 text-blue-300 border border-blue-700 p-1 px-3 rounded text-[10px] uppercase font-black transition-colors">💾 Force DB Backup</button>
+                </div>
+                <form id="overrepairForm" class="grid grid-cols-2 gap-4 bg-gray-900/40 p-4 rounded-lg border border-gray-800">
+                    <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Actor ID</label><input type="text" name="character_actor_id" required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono"></div>
+                    <div><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Inventory ID</label><input type="text" name="inventory_id" required class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono"></div>
+                    <div class="col-span-2"><label class="text-xs font-bold text-gray-400 uppercase block mb-1">Extend Target Durability Maximum</label><input type="number" name="durability" required value="50000" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white font-mono"></div>
+                    <button type="submit" class="col-span-2 bg-orange-600 hover:bg-orange-500 text-white font-black py-2 rounded uppercase text-xs transition-colors">Commit Over-repair</button>
+                </form>
+            </section>
+        </div>
+    </main>
+
     <footer class="text-center py-12 text-xs text-gray-600 tracking-widest uppercase font-semibold">
         OpenDune-Director • Admin Tools
     </footer>
 
-    <!-- ========================================================================= -->
-    <!-- SCRIPTS                                                                   -->
-    <!-- ========================================================================= -->
     <script>
         const API_BASE = "";
-        
-        // --- TAB NAVIGATION LOGIC ---
+        let indexedVehicles = [];
+
+        // --- TAB LOGIC ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
-            
-            const buttons = document.querySelectorAll('.tab-btn');
-            buttons.forEach(btn => {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('bg-gray-700', 'text-white');
                 btn.classList.add('text-gray-400');
             });
             event.target.classList.remove('text-gray-400');
             event.target.classList.add('bg-gray-700', 'text-white');
-
-            if(tabId === 'tab-map') refreshMapMarkers(); // Force redraw on open
+            if(tabId === 'tab-map') refreshMapMarkers();
+            if(tabId === 'tab-tools') loadAdminVehicles();
         }
 
-        // --- DASHBOARD SYNC LOGIC (Original) ---
-        let syncIntervalTracker = null;
+        // --- DASHBOARD SYNC ---
         async function runUnifiedDashboardSync() {
             try {
                 const response = await fetch(`${API_BASE}/api/status`);
-                const statusIndicator = document.getElementById('cluster-status');
-                const pulseDot = document.getElementById('pulse-dot');
-                const solidDot = document.getElementById('solid-dot');
-                
+                const statusInd = document.getElementById('cluster-status'), pulse = document.getElementById('pulse-dot'), solid = document.getElementById('solid-dot');
                 if (!response.ok) {
-                    statusIndicator.innerText = "System Offline (CLI Error)";
-                    statusIndicator.className = "text-sm font-medium text-red-400";
-                    pulseDot.className = "absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-0";
-                    solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
+                    statusInd.innerText = "Offline Exception"; statusInd.className = "text-sm font-medium text-red-400";
+                    pulse.className = "absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-0"; solid.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
                     return;
                 }
-
-                const result = await response.json();
-                if (result.success) {
-                    statusIndicator.innerText = result.cluster_healthy;
-                    statusIndicator.className = "text-xs md:text-sm font-bold text-green-400";
-                    pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
-                    solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+                const res = await response.json();
+                if (res.success) {
+                    statusInd.innerText = "Sync Active"; statusInd.className = "text-xs md:text-sm font-bold text-green-400";
+                    pulse.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"; solid.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+                    document.getElementById('metric-players').innerText = `${res.total_players} / ${res.max_capacity}`;
                 }
             } catch (error) { console.error(error); }
         }
 
-        // --- LIVE MAP LOGIC (Ported) ---
-        let mapConfigs = {};
-        let selectedMapKey = "HaggaBasin";
-        let mapConfig = {};
-        let mapMarkers = [];
-        let currentZoom = 0.14;
-        let isDraggingMap = false;
-        let dragStartX = 0, dragStartY = 0, dragStartScrollLeft = 0, dragStartScrollTop = 0;
+        // --- LIVE MAP ---
+        let mapConfigs = {}, selectedMapKey = "HaggaBasin", mapConfig = {}, mapMarkers = [], currentZoom = 0.14, isDraggingMap = false, dragStartX = 0, dragStartY = 0, dragStartScrollLeft = 0, dragStartScrollTop = 0;
 
         async function fetchMapConfigs() {
-            // First hit loads bounds
             try {
                 const response = await fetch(`${API_BASE}/api/map-markers`);
                 const data = await response.json();
-                if (data.ok) {
-                    mapConfigs = data.maps;
-                    mapConfig = mapConfigs[selectedMapKey];
-                    document.getElementById('teleportPartitionId').value = mapConfig.default_partition_id;
-                    refreshMapMarkers();
-                }
+                if (data.ok) { mapConfigs = data.maps; mapConfig = mapConfigs[selectedMapKey]; document.getElementById('teleportPartitionId').value = mapConfig.default_partition_id; refreshMapMarkers(); }
             } catch (e) { console.error(e); }
         }
 
@@ -333,131 +289,115 @@
             if(!mapConfig.key) return;
             const response = await fetch(`${API_BASE}/api/map-markers?map=${selectedMapKey}`);
             const data = await response.json();
-            if (data.ok) {
-                mapMarkers = data.markers;
-                renderMapMarkers();
-            }
+            if (data.ok) { mapMarkers = data.markers; renderMapMarkers(); }
         }
 
         function mapPixelToWorld(px, py) {
             const x = mapConfig.min_x + (px / mapConfig.width) * (mapConfig.max_x - mapConfig.min_x);
             let y = mapConfig.min_y + (py / mapConfig.height) * (mapConfig.max_y - mapConfig.min_y);
-            if (mapConfig.flip_y) {
-                const unflippedPy = mapConfig.height - py;
-                y = mapConfig.min_y + (unflippedPy / mapConfig.height) * (mapConfig.max_y - mapConfig.min_y);
-            }
+            if (mapConfig.flip_y) { const unf = mapConfig.height - py; y = mapConfig.min_y + (unf / mapConfig.height) * (mapConfig.max_y - mapConfig.min_y); }
             return { x, y };
         }
 
-        function initMapCanvas() {
-            const canvas = document.getElementById("mapCanvas");
-            const image = document.getElementById("mapImage");
-            const layer = document.getElementById("markerLayer");
-            
-            image.src = `/static/${mapConfig.image}`;
-            
-            const w = `${mapConfig.width * currentZoom}px`;
-            const h = `${mapConfig.height * currentZoom}px`;
-            
-            canvas.style.width = w; canvas.style.height = h;
-            image.style.width = w; image.style.height = h;
-            layer.style.width = w; layer.style.height = h;
-        }
-
         function renderMapMarkers() {
-            initMapCanvas();
-            const layer = document.getElementById("markerLayer");
-            const summary = document.getElementById("mapSummary");
+            const canvas = document.getElementById("mapCanvas"), image = document.getElementById("mapImage"), layer = document.getElementById("markerLayer");
+            image.src = `/static/${mapConfig.image}`;
+            const w = `${mapConfig.width * currentZoom}px`, h = `${mapConfig.height * currentZoom}px`;
+            canvas.style.width = w; canvas.style.height = h; image.style.width = w; image.style.height = h; layer.style.width = w; layer.style.height = h;
             layer.innerHTML = "";
-            
             const visible = mapMarkers.filter(m => m.in_bounds);
-            summary.innerHTML = `
-                Players Online: ${visible.filter(m => m.type === "player").length}<br>
-                Vehicles Found: ${visible.filter(m => m.type === "vehicle").length}<br>
-                Bases Located: ${visible.filter(m => m.type === "base").length}
-            `;
+            document.getElementById("mapSummary").innerHTML = `Players: ${visible.filter(m => m.type === "player").length} | Vehicles: ${visible.filter(m => m.type === "vehicle").length} | Bases: ${visible.filter(m => m.type === "base").length}`;
 
-            visible.forEach(marker => {
+            visible.forEach(m => {
                 const node = document.createElement("div");
-                node.className = `map-marker ${marker.type}`;
-                node.style.left = `${marker.px * currentZoom}px`;
-                node.style.top = `${marker.py * currentZoom}px`;
-                
-                const safeName = marker.name || `${marker.type} ${marker.id}`;
-                node.innerHTML = `
-                    <span class="marker-tip">
-                        <b>${safeName}</b><br>
-                        Type: ${marker.type}<br>
-                        X: ${Number(marker.x).toFixed(0)} Y: ${Number(marker.y).toFixed(0)} Z: ${Number(marker.z).toFixed(0)}
-                    </span>
-                `;
-                
+                node.className = `map-marker ${m.type}`;
+                node.style.left = `${m.px * currentZoom}px`; node.style.top = `${m.py * currentZoom}px`;
+                node.innerHTML = `<span class="marker-tip"><b>${m.name || m.type}</b><br>X: ${Number(m.x).toFixed(0)} Y: ${Number(m.y).toFixed(0)}</span>`;
                 node.addEventListener("click", (e) => {
                     e.stopPropagation();
-                    document.getElementById('teleportX').value = marker.x;
-                    document.getElementById('teleportY').value = marker.y;
-                    document.getElementById('teleportZ').value = marker.z;
-                    if(marker.fls_id) document.getElementById('teleportFlsId').value = marker.fls_id;
+                    document.getElementById('teleportX').value = Number(m.x).toFixed(2); document.getElementById('teleportY').value = Number(m.y).toFixed(2);
+                    if(m.fls_id) document.getElementById('teleportFlsId').value = m.fls_id;
                 });
-                
                 layer.appendChild(node);
             });
         }
 
-        // --- MAP CONTROLS & LISTENERS ---
-        document.getElementById('map-selector').addEventListener('change', (e) => {
-            selectedMapKey = e.target.value;
-            mapConfig = mapConfigs[selectedMapKey];
-            document.getElementById('teleportMapKey').value = selectedMapKey;
-            document.getElementById('teleportPartitionId').value = mapConfig.default_partition_id;
-            refreshMapMarkers();
-        });
-
-        document.getElementById("mapZoom").addEventListener("input", (e) => {
-            currentZoom = Math.max(0.05, Math.min(1.00, Number(e.target.value) / 100));
-            document.getElementById("zoomReadout").textContent = `${Math.round(currentZoom * 100)}%`;
-            renderMapMarkers();
-        });
-
-        const frame = document.getElementById("mapFrame");
-        frame.addEventListener("mousedown", (e) => {
-            if (e.button !== 0) return;
-            isDraggingMap = true;
-            frame.classList.add("dragging");
-            dragStartX = e.clientX; dragStartY = e.clientY;
-            dragStartScrollLeft = frame.scrollLeft; dragStartScrollTop = frame.scrollTop;
-        });
-
-        window.addEventListener("mousemove", (e) => {
-            if (!isDraggingMap) return;
-            frame.scrollLeft = dragStartScrollLeft - (e.clientX - dragStartX);
-            frame.scrollTop = dragStartScrollTop - (e.clientY - dragStartY);
-        });
-
-        window.addEventListener("mouseup", () => {
-            isDraggingMap = false;
-            frame.classList.remove("dragging");
-        });
-
-        frame.addEventListener("click", (e) => {
+        document.getElementById('map-selector').addEventListener('change', (e) => { selectedMapKey = e.target.value; mapConfig = mapConfigs[selectedMapKey]; document.getElementById('teleportMapKey').value = selectedMapKey; document.getElementById('teleportPartitionId').value = mapConfig.default_partition_id; refreshMapMarkers(); });
+        document.getElementById("mapZoom").addEventListener("input", (e) => { currentZoom = Math.max(0.05, Math.min(1.00, Number(e.target.value)/100)); document.getElementById("zoomReadout").textContent = `${Math.round(currentZoom*100)}%`; renderMapMarkers(); });
+        const mFrame = document.getElementById("mapFrame");
+        mFrame.addEventListener("mousedown", (e) => { if(e.button !== 0) return; isDraggingMap = true; mFrame.classList.add("dragging"); dragStartX = e.clientX; dragStartY = e.clientY; dragStartScrollLeft = mFrame.scrollLeft; dragStartScrollTop = mFrame.scrollTop; });
+        window.addEventListener("mousemove", (e) => { if(!isDraggingMap) return; mFrame.scrollLeft = dragStartScrollLeft - (e.clientX - dragStartX); mFrame.scrollTop = dragStartScrollTop - (e.clientY - dragStartY); });
+        window.addEventListener("mouseup", () => { isDraggingMap = false; mFrame.classList.remove("dragging"); });
+        mFrame.addEventListener("click", (e) => {
             const moved = Math.abs(e.clientX - dragStartX) + Math.abs(e.clientY - dragStartY);
             if (moved < 8) {
-                const rect = frame.getBoundingClientRect();
-                const px = (frame.scrollLeft + (e.clientX - rect.left)) / currentZoom;
-                const py = (frame.scrollTop + (e.clientY - rect.top)) / currentZoom;
-                const world = mapPixelToWorld(px, py);
-                
-                document.getElementById("teleportX").value = world.x.toFixed(2);
-                document.getElementById("teleportY").value = world.y.toFixed(2);
+                const rect = mFrame.getBoundingClientRect(); const px = (mFrame.scrollLeft + (e.clientX - rect.left)) / currentZoom, py = (mFrame.scrollTop + (e.clientY - rect.top)) / currentZoom;
+                if(px >= 0 && py >= 0 && px <= mapConfig.width && py <= mapConfig.height) { const world = mapPixelToWorld(px, py); document.getElementById("teleportX").value = world.x.toFixed(2); document.getElementById("teleportY").value = world.y.toFixed(2); }
             }
         });
 
-        // --- INITALIZATION LOGIC ---
+        document.getElementById('teleportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = new FormData(); form.append("fls_id", document.getElementById('teleportFlsId').value); form.append("map_key", document.getElementById('teleportMapKey').value); form.append("partition_id", document.getElementById('teleportPartitionId').value); form.append("x", document.getElementById('teleportX').value); form.append("y", document.getElementById('teleportY').value); form.append("z", document.getElementById('teleportZ').value);
+            const res = await fetch('/api/teleport-offline', { method: 'POST', body: form }); const data = await res.json();
+            alert(data.ok ? "Player teleported successfully!" : "Error routing player.");
+        });
+
+        // --- DATABASE & MOD TOOLS ---
+        async function loadAdminVehicles() {
+            const selector = document.getElementById('vehicle-selector'); selector.innerHTML = "<option>Scanning cluster registries...</option>";
+            try {
+                const res = await fetch('/api/teleportable-vehicles'); const data = await res.json();
+                if (data.ok && data.vehicles.length > 0) {
+                    indexedVehicles = data.vehicles; selector.innerHTML = "<option value=''>Select a vehicle...</option>";
+                    data.vehicles.forEach((v, index) => { const opt = document.createElement('option'); opt.value = index; opt.innerText = `[${v.short_class}] ID: ${v.actor_id}`; selector.appendChild(opt); });
+                } else { selector.innerHTML = "<option>No vehicles stored across partitions.</option>"; }
+            } catch (e) { selector.innerHTML = "<option>Failed processing entity list.</option>"; }
+        }
+
+        document.getElementById('vehicle-selector').addEventListener('change', (e) => {
+            if(e.target.value === "") return;
+            const v = indexedVehicles[e.target.value];
+            document.getElementById('vehActorId').value = v.actor_id; document.getElementById('vehMapKey').value = v.map || "HaggaBasin"; document.getElementById('vehPartitionId').value = v.partition_id || "1";
+            document.getElementById('vehX').value = v.x; document.getElementById('vehY').value = v.y; document.getElementById('vehZ').value = v.z || "1500";
+        });
+
+        document.getElementById('vehicleTeleportForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); if(!document.getElementById('vehActorId').value) { alert("Select a vehicle first."); return; }
+            const res = await fetch('/api/teleport-vehicle', { method: 'POST', body: new FormData(e.target) }); const data = await res.json();
+            alert(data.ok ? "Vehicle vector reposition committed!" : "Failed moving asset."); loadAdminVehicles();
+        });
+
+        document.getElementById('overrepairForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch('/api/overrepair', { method: 'POST', body: new FormData(e.target) }); const data = await res.json();
+            alert(data.ok ? "Durability array matrix modified successfully!" : "Over-repair rejected by DB handler.");
+        });
+
+        document.getElementById('itemGrantForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); if(!confirm("Player must be OFFLINE. Proceed with injection?")) return;
+            const res = await fetch('/api/grant-item', { method: 'POST', body: new FormData(e.target) }); const data = await res.json();
+            alert(data.ok ? "Item bundle injected successfully!" : "Failed to inject item.");
+        });
+
+        document.getElementById('thopterGrantForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); if(!confirm("Player must be OFFLINE. This injects 5 parts. Proceed?")) return;
+            const form = new FormData(); form.append("fls_id", document.getElementById('thopterFlsId').value);
+            const res = await fetch('/api/grant-thopter', { method: 'POST', body: form }); const data = await res.json();
+            alert(data.ok ? "MK6 Kit injected successfully!" : "Failed to inject kit.");
+        });
+
+        document.getElementById('triggerBackupBtn').addEventListener('click', async () => {
+            if(!confirm("Trigger manual background pg_dump?")) return;
+            try {
+                const res = await fetch('/api/db-backup', { method: 'POST' }); const data = await res.json();
+                alert(data.success ? data.message : "Backup Failed.");
+            } catch (e) { alert("Backup error: " + e); }
+        });
+
         window.addEventListener('DOMContentLoaded', () => {
-            runUnifiedDashboardSync();
-            fetchMapConfigs();
-            setInterval(runUnifiedDashboardSync, 5000);
-            setInterval(refreshMapMarkers, 10000); // Poll map data every 10s
+            runUnifiedDashboardSync(); fetchMapConfigs();
+            setInterval(runUnifiedDashboardSync, 5000); setInterval(refreshMapMarkers, 10000);
         });
     </script>
 </body>
