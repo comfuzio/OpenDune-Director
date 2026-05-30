@@ -47,7 +47,7 @@ To deploy this web menu, your infrastructure must meet the following criteria:
 ### Step 1: Install System OS Dependencies
 Before configuring the application workspace, install the required network state tracking utilities on your Ubuntu host environment:
 ```bash
-sudo apt update && sudo apt install conntrack -y
+sudo apt install python3-pip conntrack -y
 ```
 ### Step 2: Clone the Project Workspace
 Ensure your files match the strict directory layout under your dune system home path:
