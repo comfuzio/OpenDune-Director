@@ -5,6 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenDune - Public Server Status</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Minimalist Read-Only Map CSS */
+        .map-frame {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            background: #050505;
+            border: 1px solid #333;
+            cursor: grab;
+            border-radius: 0.5rem;
+        }
+        .map-frame.dragging { cursor: grabbing; }
+        .map-canvas { position: relative; transform-origin: top left; }
+        .map-image { position: absolute; left: 0; top: 0; user-select: none; pointer-events: none; opacity: 0.8; }
+        .marker-layer { position: absolute; left: 0; top: 0; }
+        .map-marker {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid #000;
+            transform: translate(-50%, -50%);
+            background: #d6a444; 
+            box-shadow: 0 0 8px #d6a444;
+            z-index: 5;
+            transition: all 0.2s ease;
+        }
+        .map-marker:hover { width: 12px; height: 12px; z-index: 10; }
+        .marker-tip {
+            display: none;
+            position: absolute;
+            left: 14px;
+            top: -10px;
+            min-width: max-content;
+            background: #111;
+            border: 1px solid #d6a444;
+            color: #ddd;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+        .map-marker:hover .marker-tip { display: block; }
+    </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen font-sans antialiased selection:bg-orange-500 selection:text-white pb-12">
 
@@ -45,6 +91,22 @@
                 <div id="location-breakdown-list" class="space-y-2 overflow-y-auto pr-1"></div>
             </div>
         </section>
+        
+        <section class="lg:col-span-2 bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
+            <div class="flex justify-between items-center border-b border-gray-700 pb-3 mb-5">
+                <h2 class="text-lg md:text-xl font-extrabold text-orange-300 tracking-wide uppercase">🗺️ Discovered Settlements (Hagga Basin)</h2>
+                <div class="text-xs font-mono text-gray-400" id="base-count">Found: 0 Bases</div>
+            </div>
+            
+            <div class="map-frame" id="mapFrame">
+                <div class="map-canvas" id="mapCanvas">
+                    <img class="map-image" id="mapImage" src="/static/arrakis_hb.webp" alt="Map Base">
+                    <div class="marker-layer" id="markerLayer"></div>
+                </div>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-2 text-right uppercase tracking-widest">Player & Vehicle tracking is restricted to Admin personnel only.</p>
+        </section>
+        
     </main>
 
     <section class="max-w-7xl mx-auto px-4 md:px-8">
@@ -75,6 +137,84 @@
     <script>
         const API_BASE = "";
 
+        // ==========================================
+        // MAP LOGIC (Minimal Implementation)
+        // ==========================================
+        let mapConfig = {};
+        let mapMarkers = [];
+        const fixedZoom = 0.20; // Hardcoded zoom for public view to prevent scrolling issues
+        
+        // Panning Variables
+        let isDraggingMap = false;
+        let dragStartX = 0, dragStartY = 0, dragStartScrollLeft = 0, dragStartScrollTop = 0;
+
+        async function fetchPublicMap() {
+            try {
+                const response = await fetch(`${API_BASE}/api/public-map-markers`);
+                const data = await response.json();
+                if (data.ok) {
+                    mapConfig = data.map;
+                    mapMarkers = data.markers;
+                    renderPublicMap();
+                }
+            } catch (e) { console.error("Map fetch error:", e); }
+        }
+
+        function renderPublicMap() {
+            if(!mapConfig.key) return;
+            const canvas = document.getElementById("mapCanvas");
+            const image = document.getElementById("mapImage");
+            const layer = document.getElementById("markerLayer");
+            
+            const w = `${mapConfig.width * fixedZoom}px`;
+            const h = `${mapConfig.height * fixedZoom}px`;
+            
+            canvas.style.width = w; canvas.style.height = h;
+            image.style.width = w; image.style.height = h;
+            layer.style.width = w; layer.style.height = h;
+            
+            layer.innerHTML = "";
+            const visible = mapMarkers.filter(m => m.in_bounds);
+            
+            document.getElementById("base-count").innerText = `Found: ${visible.length} Bases`;
+
+            visible.forEach(marker => {
+                const node = document.createElement("div");
+                node.className = "map-marker base";
+                node.style.left = `${marker.px * fixedZoom}px`;
+                node.style.top = `${marker.py * fixedZoom}px`;
+                
+                node.innerHTML = `
+                    <span class="marker-tip">
+                        ${marker.name}
+                    </span>
+                `;
+                layer.appendChild(node);
+            });
+        }
+
+        // Map Panning Listeners
+        const frame = document.getElementById("mapFrame");
+        frame.addEventListener("mousedown", (e) => {
+            isDraggingMap = true;
+            frame.classList.add("dragging");
+            dragStartX = e.clientX; dragStartY = e.clientY;
+            dragStartScrollLeft = frame.scrollLeft; dragStartScrollTop = frame.scrollTop;
+        });
+        window.addEventListener("mousemove", (e) => {
+            if (!isDraggingMap) return;
+            frame.scrollLeft = dragStartScrollLeft - (e.clientX - dragStartX);
+            frame.scrollTop = dragStartScrollTop - (e.clientY - dragStartY);
+        });
+        window.addEventListener("mouseup", () => {
+            isDraggingMap = false;
+            frame.classList.remove("dragging");
+        });
+
+
+        // ==========================================
+        // SERVER STATS SYNC LOGIC
+        // ==========================================
         async function runUnifiedDashboardSync() {
             try {
                 const response = await fetch(`${API_BASE}/api/status`);
@@ -151,14 +291,14 @@
                         }
                     }
                 }
-            } catch (error) {
-                console.error("Dashboard Sync Error:", error);
-            }
+            } catch (error) { console.error("Dashboard Sync Error:", error); }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             runUnifiedDashboardSync();
-            setInterval(runUnifiedDashboardSync, 10000); // Check every 10 seconds
+            fetchPublicMap();
+            setInterval(runUnifiedDashboardSync, 10000); // Check stats every 10s
+            setInterval(fetchPublicMap, 30000); // Update base locations every 30s
         });
     </script>
 </body>
