@@ -1,7 +1,6 @@
 import os
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
@@ -19,11 +18,11 @@ class GameplayConfigPayload(BaseModel):
     coriolis_storm: bool
 
 # -------------------------------------------------------------------------
-# LIVE MAP API ENDPOINTS (NEW)
+# LIVE MAP API ENDPOINTS 
 # -------------------------------------------------------------------------
 @app.get("/api/map-markers")
 async def get_live_map_markers(map: str = map_service.DEFAULT_MAP_KEY):
-    """Provides live JSON data to the frontend mapping script."""
+    """Provides full live JSON data to the Admin mapping script."""
     try:
         map_cfg = map_service.MAP_CONFIGS.get(map, map_service.MAP_CONFIGS[map_service.DEFAULT_MAP_KEY])
         markers = map_service.get_map_markers(map_cfg["key"])
@@ -37,6 +36,49 @@ async def get_live_map_markers(map: str = map_service.DEFAULT_MAP_KEY):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+
+@app.get("/api/public-map-markers")
+async def get_public_base_map_markers():
+    """Provides ONLY base locations for the public UI."""
+    try:
+        map_cfg = map_service.MAP_CONFIGS["HaggaBasin"]
+        markers = map_service.get_public_base_markers()
+        return {"ok": True, "map": map_cfg, "markers": markers}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# -------------------------------------------------------------------------
+# ADMIN DB TOOLS (VEHICLES & REPAIR)
+# -------------------------------------------------------------------------
+@app.get("/api/teleportable-vehicles")
+async def get_admin_vehicles():
+    try:
+        return {"ok": True, "vehicles": map_service.get_teleportable_vehicles()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/teleport-vehicle")
+async def admin_teleport_vehicle(
+    actor_id: str = Form(...), map_key: str = Form(...), partition_id: str = Form(...),
+    x: str = Form(...), y: str = Form(...), z: str = Form(...)
+):
+    try:
+        sql = map_service.build_vehicle_teleport_sql(actor_id, map_key, partition_id, x, y, z)
+        output = db_connector.run_psql(sql)
+        return {"ok": True, "output": output}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Vehicle Teleport failed: {str(e)}")
+
+@app.post("/api/overrepair")
+async def admin_overrepair(
+    character_actor_id: str = Form(...), inventory_id: str = Form(...), durability: str = Form(...)
+):
+    try:
+        sql = map_service.build_overrepair_sql(character_actor_id, inventory_id, durability)
+        output = db_connector.run_psql(sql)
+        return {"ok": True, "output": output}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Overrepair failed: {str(e)}")
 
 # -------------------------------------------------------------------------
 # CORE METRICS & INFRASTRUCTURE MONITOR ENDPOINTS
