@@ -66,3 +66,24 @@ def run_psql_script(sql, timeout=180):
         + "\nSTDERR:\n" + proc.stderr
         + f"\nExit code: {proc.returncode}"
     )
+def run_tab_query(sql, timeout=20):
+    """Executes a query and returns tab-separated rows for easy parsing."""
+    pod_name = get_postgres_pod()
+    cmd = [
+        "kubectl", "exec", "-n", K8S_NAMESPACE, pod_name, "--",
+        "psql", "-U", "dune", "-d", "dune",
+        "-At", "-F", "\t", "-c", sql
+    ]
+    
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+    
+    if proc.returncode != 0:
+        return []
+
+    return proc.stdout.strip().splitlines()
