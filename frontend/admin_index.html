@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenDune - Admin Director</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Map CSS Ported from Easy-Dune-Admin */
+        .map-frame {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            min-height: 500px;
+            overflow: auto;
+            background: #020202;
+            border: 1px solid #333;
+            cursor: grab;
+            overscroll-behavior: contain;
+            border-radius: 0.5rem;
+        }
+        .map-frame.dragging { cursor: grabbing; user-select: none; }
+        .map-canvas { position: relative; transform-origin: top left; }
+        .map-image { position: absolute; left: 0; top: 0; user-select: none; pointer-events: none; }
+        .marker-layer { position: absolute; left: 0; top: 0; }
+        .map-marker {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #000;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            z-index: 5;
+            transition: all 0.2s ease;
+        }
+        .map-marker.player { background: #4aa3ff; box-shadow: 0 0 12px #4aa3ff; }
+        .map-marker.vehicle { background: #71d36b; box-shadow: 0 0 12px #71d36b; }
+        .map-marker.base { background: #d6a444; box-shadow: 0 0 12px #d6a444; }
+        .map-marker:hover { width: 16px; height: 16px; z-index: 10; }
+        .marker-tip {
+            display: none;
+            position: absolute;
+            left: 20px;
+            top: -10px;
+            min-width: 220px;
+            background: #111;
+            border: 1px solid #ff8c00;
+            color: #ddd;
+            padding: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+        .map-marker:hover .marker-tip { display: block; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans antialiased selection:bg-orange-500 selection:text-white pb-12">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-lg sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">🏜️</span>
+            <h1 class="text-xl md:text-2xl font-black tracking-widest text-orange-400 uppercase">OpenDune-Director (Admin)</h1>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="hidden md:flex space-x-2 bg-gray-900 rounded-lg p-1 border border-gray-700">
+            <button onclick="switchTab('tab-dashboard')" class="tab-btn px-4 py-2 rounded text-sm font-bold bg-gray-700 text-white transition-colors">Server Dashboard</button>
+            <button onclick="switchTab('tab-map')" class="tab-btn px-4 py-2 rounded text-sm font-bold text-gray-400 hover:text-white transition-colors">Live Map & Teleport</button>
+        </div>
+
+        <div class="flex items-center space-x-4 bg-gray-900/60 p-2 px-4 rounded-full border border-gray-700">
+            <span class="flex h-3 w-3 relative">
+                <span id="pulse-dot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                <span id="solid-dot" class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
+            </span>
+            <span id="cluster-status" class="text-xs md:text-sm font-bold tracking-wide text-gray-300">Syncing...</span>
+        </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: SERVER DASHBOARD (Your Original UI) -->
+    <!-- ========================================================================= -->
+    <main id="tab-dashboard" class="tab-content max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+        
+        <!-- Gameplay Controls -->
+        <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
+            <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 uppercase">⚙️ Gameplay Mechanics</h2>
+            <form id="config-form" class="space-y-4">
+                <div class="flex items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800">
+                    <div>
+                        <label class="block text-sm font-bold text-white">Force PvP Globally</label>
+                        <span class="text-xs text-gray-400">Overrides partition safety rules across all maps.</span>
+                    </div>
+                    <input type="checkbox" id="force-pvp" class="w-6 h-6 accent-orange-500 rounded cursor-pointer">
+                </div>
+                <div class="flex items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800">
+                    <div>
+                        <label class="block text-sm font-bold text-white">Enable Security Zones</label>
+                        <span class="text-xs text-gray-400">Enforces safe trade hubs where combat is prohibited.</span>
+                    </div>
+                    <input type="checkbox" id="security-zones" class="w-6 h-6 accent-orange-500 rounded cursor-pointer">
+                </div>
+                <div class="flex items-center justify-between bg-gray-900 p-4 rounded-lg border border-gray-800">
+                    <div>
+                        <label class="block text-sm font-bold text-white">Coriolis Auto-Spawn Storms</label>
+                        <span class="text-xs text-gray-400">Allows sandstorms to dynamically wipe builds.</span>
+                    </div>
+                    <input type="checkbox" id="coriolis-storm" class="w-6 h-6 accent-orange-500 rounded cursor-pointer">
+                </div>
+                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 px-4 rounded-lg text-sm uppercase transition-all shadow-lg">
+                    Apply Global Subsystem Toggles (.ini)
+                </button>
+            </form>
+        </section>
+
+        <!-- Active Sectors -->
+        <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl">
+            <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 uppercase">📦 Active Sector Clusters</h2>
+            <div id="pod-zones-container" class="space-y-4">
+                <div class="text-sm text-gray-500 italic text-center py-8">Querying system metrics...</div>
+            </div>
+        </section>
+
+        <!-- Population & Telemetry -->
+        <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-5 text-orange-300 uppercase">📡 Population Telemetry</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center mb-4">
+                    <div class="bg-gray-900 p-4 rounded-lg border border-gray-800">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Cluster Players</div>
+                        <div id="metric-players" class="text-2xl md:text-3xl font-black text-white tracking-tight">-- / --</div>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded-lg border border-gray-800 flex flex-col justify-center items-center">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Monitor Refresh Speed</div>
+                        <select id="interval-selector" class="bg-gray-800 border border-gray-700 text-sm font-bold rounded-lg p-1.5 text-orange-300 w-full text-center">
+                            <option value="1000">🚀 Aggressive (1s)</option>
+                            <option value="5000" selected>🍃 Balanced (5s)</option>
+                            <option value="10000">⏳ Conservative (10s)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-2 border-t border-gray-700/60 flex justify-between items-center text-[10px] text-gray-500 tracking-wide uppercase font-bold">
+                <div id="location-breakdown-list" class="w-full space-y-2 max-h-24 overflow-y-auto mb-4 pr-1"></div>
+            </div>
+        </section>
+
+        <!-- Core Controls & Stream -->
+        <section class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-700 shadow-xl flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg md:text-xl font-extrabold border-b border-gray-700 pb-3 mb-2 text-orange-300 uppercase">🛠️ Core Control Panel</h2>
+                
+                <div id="console-wrapper" class="hidden mb-4">
+                    <pre id="terminal-console" class="bg-black text-green-400 p-4 rounded-lg border border-gray-800 font-mono text-[11px] leading-relaxed overflow-y-auto h-44 shadow-inner whitespace-pre-wrap">Initializing log listener stream...</pre>
+                </div>
+            </div>
+            <div class="space-y-3.5">
+                <div class="grid grid-cols-3 gap-3">
+                    <button id="global-btn-start" class="bg-emerald-900/40 text-emerald-300 border border-emerald-700 font-extrabold py-3 px-2 rounded-lg text-xs uppercase">▶ Cluster Start</button>
+                    <button id="global-btn-stop" class="bg-red-900/40 text-red-300 border border-red-700 font-extrabold py-3 px-2 rounded-lg text-xs uppercase">■ Cluster Stop</button>
+                    <button id="global-btn-restart" class="bg-gray-900 text-gray-200 border border-gray-700 font-extrabold py-3 px-2 rounded-lg text-xs uppercase">🔄 Cluster Cycle</button>
+                </div>
+                <button id="global-btn-update" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-3 px-4 rounded-lg text-sm uppercase transition-all shadow-md">
+                    🚀 Run Safe Server File Update
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: LIVE MAP & OFFLINE TELEPORTATION (Ported Features) -->
+    <!-- ========================================================================= -->
+    <main id="tab-map" class="tab-content max-w-[1600px] mx-auto p-4 md:p-8 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            
+            <!-- Map Controls / Teleport Form -->
+            <div class="lg:col-span-1 bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-xl flex flex-col gap-6">
+                
+                <!-- Map Selector -->
+                <div>
+                    <h2 class="text-lg font-black text-orange-300 uppercase border-b border-gray-700 pb-2 mb-4">Map Controls</h2>
+                    <select id="map-selector" class="w-full bg-gray-900 border border-gray-700 text-white rounded p-2 mb-4">
+                        <option value="HaggaBasin">Arrakis - Hagga Basin</option>
+                        <option value="DeepDesert">The Deep Desert</option>
+                    </select>
+                    
+                    <div class="flex items-center space-x-2 text-sm text-gray-400">
+                        <label>Zoom Level:</label>
+                        <input id="mapZoom" type="range" min="5" max="100" value="14" class="w-full accent-orange-500">
+                        <span id="zoomReadout">14%</span>
+                    </div>
+                </div>
+
+                <!-- Live Summary -->
+                <div class="bg-gray-900 p-4 rounded-lg border border-gray-800 text-sm font-mono text-gray-300" id="mapSummary">
+                    Loading markers...
+                </div>
+
+                <!-- Admin Teleport Form -->
+                <div>
+                    <h2 class="text-lg font-black text-emerald-400 uppercase border-b border-gray-700 pb-2 mb-4">Admin Teleportation</h2>
+                    <p class="text-xs text-gray-400 mb-4">Click a player dot on the map to auto-fill these coordinates, or enter manually.</p>
+                    
+                    <form id="teleportForm" class="space-y-3">
+                        <input type="hidden" id="teleportMapKey" value="HaggaBasin">
+                        
+                        <div>
+                            <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Target FLS ID</label>
+                            <input type="text" id="teleportFlsId" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" placeholder="Player FLS ID">
+                        </div>
+                        
+                        <div>
+                            <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Partition ID</label>
+                            <input type="text" id="teleportPartitionId" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" placeholder="1 or 8">
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">X</label>
+                                <input type="text" id="teleportX" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Y</label>
+                                <input type="text" id="teleportY" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Z</label>
+                                <input type="text" id="teleportZ" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white" value="1000">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 rounded uppercase mt-2 transition-colors">
+                            Move Offline Player
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- The Interactive Map Canvas -->
+            <div class="lg:col-span-3 bg-gray-800 p-2 rounded-xl border border-gray-700 shadow-xl">
+                <div class="map-frame" id="mapFrame">
+                    <div class="map-canvas" id="mapCanvas">
+                        <img class="map-image" id="mapImage" src="/static/arrakis_hb.webp" alt="Map Base">
+                        <div class="marker-layer" id="markerLayer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-center py-12 text-xs text-gray-600 tracking-widest uppercase font-semibold">
+        OpenDune-Director • Admin Tools
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- SCRIPTS                                                                   -->
+    <!-- ========================================================================= -->
+    <script>
+        const API_BASE = "";
+        
+        // --- TAB NAVIGATION LOGIC ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-gray-700', 'text-white');
+                btn.classList.add('text-gray-400');
+            });
+            event.target.classList.remove('text-gray-400');
+            event.target.classList.add('bg-gray-700', 'text-white');
+
+            if(tabId === 'tab-map') refreshMapMarkers(); // Force redraw on open
+        }
+
+        // --- DASHBOARD SYNC LOGIC (Original) ---
+        let syncIntervalTracker = null;
+        async function runUnifiedDashboardSync() {
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const statusIndicator = document.getElementById('cluster-status');
+                const pulseDot = document.getElementById('pulse-dot');
+                const solidDot = document.getElementById('solid-dot');
+                
+                if (!response.ok) {
+                    statusIndicator.innerText = "System Offline (CLI Error)";
+                    statusIndicator.className = "text-sm font-medium text-red-400";
+                    pulseDot.className = "absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-0";
+                    solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
+                    return;
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    statusIndicator.innerText = result.cluster_healthy;
+                    statusIndicator.className = "text-xs md:text-sm font-bold text-green-400";
+                    pulseDot.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
+                    solidDot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        // --- LIVE MAP LOGIC (Ported) ---
+        let mapConfigs = {};
+        let selectedMapKey = "HaggaBasin";
+        let mapConfig = {};
+        let mapMarkers = [];
+        let currentZoom = 0.14;
+        let isDraggingMap = false;
+        let dragStartX = 0, dragStartY = 0, dragStartScrollLeft = 0, dragStartScrollTop = 0;
+
+        async function fetchMapConfigs() {
+            // First hit loads bounds
+            try {
+                const response = await fetch(`${API_BASE}/api/map-markers`);
+                const data = await response.json();
+                if (data.ok) {
+                    mapConfigs = data.maps;
+                    mapConfig = mapConfigs[selectedMapKey];
+                    document.getElementById('teleportPartitionId').value = mapConfig.default_partition_id;
+                    refreshMapMarkers();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function refreshMapMarkers() {
+            if(!mapConfig.key) return;
+            const response = await fetch(`${API_BASE}/api/map-markers?map=${selectedMapKey}`);
+            const data = await response.json();
+            if (data.ok) {
+                mapMarkers = data.markers;
+                renderMapMarkers();
+            }
+        }
+
+        function mapPixelToWorld(px, py) {
+            const x = mapConfig.min_x + (px / mapConfig.width) * (mapConfig.max_x - mapConfig.min_x);
+            let y = mapConfig.min_y + (py / mapConfig.height) * (mapConfig.max_y - mapConfig.min_y);
+            if (mapConfig.flip_y) {
+                const unflippedPy = mapConfig.height - py;
+                y = mapConfig.min_y + (unflippedPy / mapConfig.height) * (mapConfig.max_y - mapConfig.min_y);
+            }
+            return { x, y };
+        }
+
+        function initMapCanvas() {
+            const canvas = document.getElementById("mapCanvas");
+            const image = document.getElementById("mapImage");
+            const layer = document.getElementById("markerLayer");
+            
+            image.src = `/static/${mapConfig.image}`;
+            
+            const w = `${mapConfig.width * currentZoom}px`;
+            const h = `${mapConfig.height * currentZoom}px`;
+            
+            canvas.style.width = w; canvas.style.height = h;
+            image.style.width = w; image.style.height = h;
+            layer.style.width = w; layer.style.height = h;
+        }
+
+        function renderMapMarkers() {
+            initMapCanvas();
+            const layer = document.getElementById("markerLayer");
+            const summary = document.getElementById("mapSummary");
+            layer.innerHTML = "";
+            
+            const visible = mapMarkers.filter(m => m.in_bounds);
+            summary.innerHTML = `
+                Players Online: ${visible.filter(m => m.type === "player").length}<br>
+                Vehicles Found: ${visible.filter(m => m.type === "vehicle").length}<br>
+                Bases Located: ${visible.filter(m => m.type === "base").length}
+            `;
+
+            visible.forEach(marker => {
+                const node = document.createElement("div");
+                node.className = `map-marker ${marker.type}`;
+                node.style.left = `${marker.px * currentZoom}px`;
+                node.style.top = `${marker.py * currentZoom}px`;
+                
+                const safeName = marker.name || `${marker.type} ${marker.id}`;
+                node.innerHTML = `
+                    <span class="marker-tip">
+                        <b>${safeName}</b><br>
+                        Type: ${marker.type}<br>
+                        X: ${Number(marker.x).toFixed(0)} Y: ${Number(marker.y).toFixed(0)} Z: ${Number(marker.z).toFixed(0)}
+                    </span>
+                `;
+                
+                node.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    document.getElementById('teleportX').value = marker.x;
+                    document.getElementById('teleportY').value = marker.y;
+                    document.getElementById('teleportZ').value = marker.z;
+                    if(marker.fls_id) document.getElementById('teleportFlsId').value = marker.fls_id;
+                });
+                
+                layer.appendChild(node);
+            });
+        }
+
+        // --- MAP CONTROLS & LISTENERS ---
+        document.getElementById('map-selector').addEventListener('change', (e) => {
+            selectedMapKey = e.target.value;
+            mapConfig = mapConfigs[selectedMapKey];
+            document.getElementById('teleportMapKey').value = selectedMapKey;
+            document.getElementById('teleportPartitionId').value = mapConfig.default_partition_id;
+            refreshMapMarkers();
+        });
+
+        document.getElementById("mapZoom").addEventListener("input", (e) => {
+            currentZoom = Math.max(0.05, Math.min(1.00, Number(e.target.value) / 100));
+            document.getElementById("zoomReadout").textContent = `${Math.round(currentZoom * 100)}%`;
+            renderMapMarkers();
+        });
+
+        const frame = document.getElementById("mapFrame");
+        frame.addEventListener("mousedown", (e) => {
+            if (e.button !== 0) return;
+            isDraggingMap = true;
+            frame.classList.add("dragging");
+            dragStartX = e.clientX; dragStartY = e.clientY;
+            dragStartScrollLeft = frame.scrollLeft; dragStartScrollTop = frame.scrollTop;
+        });
+
+        window.addEventListener("mousemove", (e) => {
+            if (!isDraggingMap) return;
+            frame.scrollLeft = dragStartScrollLeft - (e.clientX - dragStartX);
+            frame.scrollTop = dragStartScrollTop - (e.clientY - dragStartY);
+        });
+
+        window.addEventListener("mouseup", () => {
+            isDraggingMap = false;
+            frame.classList.remove("dragging");
+        });
+
+        frame.addEventListener("click", (e) => {
+            const moved = Math.abs(e.clientX - dragStartX) + Math.abs(e.clientY - dragStartY);
+            if (moved < 8) {
+                const rect = frame.getBoundingClientRect();
+                const px = (frame.scrollLeft + (e.clientX - rect.left)) / currentZoom;
+                const py = (frame.scrollTop + (e.clientY - rect.top)) / currentZoom;
+                const world = mapPixelToWorld(px, py);
+                
+                document.getElementById("teleportX").value = world.x.toFixed(2);
+                document.getElementById("teleportY").value = world.y.toFixed(2);
+            }
+        });
+
+        // --- INITALIZATION LOGIC ---
+        window.addEventListener('DOMContentLoaded', () => {
+            runUnifiedDashboardSync();
+            fetchMapConfigs();
+            setInterval(runUnifiedDashboardSync, 5000);
+            setInterval(refreshMapMarkers, 10000); // Poll map data every 10s
+        });
+    </script>
+</body>
+</html>
