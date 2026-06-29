@@ -4,9 +4,10 @@ OpenDune-Director is a lightweight, independent, and **100% open-source** web ma
 
 Unlike restrictive, closed-off, or "source-available" tools that limit community innovation, OpenDune-Director is built entirely from scratch from raw infrastructure fundamentals. It is licensed under the **GNU AGPLv3**, ensuring that this tool — and any future modifications or dashboards built upon it, will remain completely free, collaborative, and open to everyone forever. No splitters allowed.
 
-**Acknowledgments:** This project proudly incorporates map rendering architecture and database concepts originally pioneered by the [Easy-Dune-Admin](https://github.com/valknight/Easy-Dune-Admin) project. By merging their dependency-free frontend map canvas and SQL manipulation logic with our lightweight FastAPI backend, we deliver a powerful, unified command center.
+**Acknowledgments:** This project proudly incorporates map rendering architecture and database concepts originally pioneered by the [Easy-Dune-Admin](https://github.com/valknight/Easy-Dune-Admin) project(No longer exists but credits have to be given). By merging their dependency-free frontend map canvas and SQL manipulation logic with our lightweight FastAPI backend, we deliver a powerful, unified command center.
 
-This is a work in progress, please join the community's discord: https://discord.gg/rgR79rfnRZ
+This is a work in progress. Please take backups before, during and after for peace of mind.
+Because Dune's PTC discord server and Dune's unofficial Self Hosted Discord server are highly toxic communities, any and all support will be provided on my own discord server, please join the E-Arena.gr discord server: https://discord.gg/xmYSSTJkMz
 
 ---
 
